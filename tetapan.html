@@ -1,1329 +1,1556 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetapan - Panel Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <script type="module" src="./firebase-init.js"></script> 
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+<title>Tetapan - Portal Komuniti</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <style>
-        :root {
-            --primary: #0f172a;
-            --accent: #2563eb;
-            --bg-body: #f1f5f9;
-            --bg-card: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --sidebar-width: 260px;
-            --transition: all 0.3s ease;
-        }
+<script type="module" src="./firebase-init.js"></script>
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        
-        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+<style>
+:root {
+--primary: #0f172a;
+--accent: #2563eb;
+--bg-body: #f1f5f9;
+--bg-card: #ffffff;
+--text-main: #1e293b;
+--text-muted: #64748b;
+--success: #10b981;
+--warning: #f59e0b;
+--danger: #ef4444;
+--sidebar-width: 260px;
+--transition: all 0.3s ease;
+}
 
-        /* --- LOADING SPINNER --- */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0,0,0,.1);
-            border-radius: 50%;
-            border-top-color: var(--accent);
-            animation: spin 1s ease-in-out infinite;
-        }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
 
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
+/* --- LOADING SPINNER --- */
+.loading-spinner {
+display: inline-block;
+width: 20px;
+height: 20px;
+border: 3px solid rgba(0,0,0,.1);
+border-radius: 50%;
+border-top-color: var(--accent);
+animation: spin 1s ease-in-out infinite;
+}
 
-        .loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
+@keyframes spin {
+to { transform: rotate(360deg); }
+}
 
-        .loading-content {
-            text-align: center;
-        }
+.loading-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(255, 255, 255, 0.8);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 1000;
+opacity: 0;
+visibility: hidden;
+transition: opacity 0.3s, visibility 0.3s;
+}
 
-        .loading-content .loading-spinner {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 15px;
-        }
+.loading-overlay.active {
+opacity: 1;
+visibility: visible;
+}
 
-        /* --- SIDEBAR --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--primary);
-            color: white;
-            padding: 1.5rem;
-            position: fixed;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-            transition: transform 0.3s ease;
-        }
+.loading-content {
+text-align: center;
+}
 
-        .sidebar-toggle {
-            display: none;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 101;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+.loading-content .loading-spinner {
+width: 40px;
+height: 40px;
+margin: 0 auto 15px;
+}
 
-        .brand {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 2.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: 0.5px;
-        }
+/* --- SIDEBAR --- */
+.sidebar {
+width: var(--sidebar-width);
+background: var(--primary);
+color: white;
+padding: 1.5rem;
+position: fixed;
+height: 100vh;
+display: flex;
+flex-direction: column;
+z-index: 100;
+transition: transform 0.3s ease;
+/* PWA: Make sidebar scrollable on mobile */
+overflow-y: auto;
+/* PWA: Enable smooth scrolling for touch devices */
+-webkit-overflow-scrolling: touch;
+/* PWA: Add padding at bottom for better mobile experience */
+padding-bottom: 5rem;
+}
 
-        .menu-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: #94a3b8;
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
+.sidebar-toggle {
+display: none;
+position: fixed;
+top: 20px;
+left: 20px;
+z-index: 101;
+background: var(--primary);
+color: white;
+border: none;
+border-radius: 8px;
+padding: 10px;
+cursor: pointer;
+box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+/* PWA: Add haptic feedback */
+-webkit-tap-highlight-color: rgba(255,255,255,0.2);
+}
 
-        .menu-group { margin-bottom: 2rem; }
-        .menu { list-style: none; }
-        
-        .menu li a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            color: #cbd5e1;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: var(--transition);
-            font-size: 0.95rem;
-        }
+.brand {
+font-size: 1.25rem;
+font-weight: 700;
+margin-bottom: 2.5rem;
+display: flex;
+align-items: center;
+gap: 10px;
+letter-spacing: 0.5px;
+}
 
-        .menu li a:hover, .menu li a.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
+.menu-title {
+font-size: 0.75rem;
+text-transform: uppercase;
+color: #94a3b8;
+margin-bottom: 0.75rem;
+font-weight: 600;
+letter-spacing: 1px;
+}
 
-        .menu li a i { font-size: 1.2rem; }
+.menu-group { margin-bottom: 2rem; }
+.menu { list-style: none; }
 
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            flex: 1;
-            padding: 2rem;
-            width: 100%;
-            transition: margin-left 0.3s ease;
-        }
+.menu li a {
+display: flex;
+align-items: center;
+gap: 12px;
+padding: 10px 12px;
+color: #cbd5e1;
+text-decoration: none;
+border-radius: 8px;
+transition: var(--transition);
+font-size: 0.95rem;
+/* PWA: Add touch feedback */
+-webkit-tap-highlight-color: rgba(255,255,255,0.1);
+/* PWA: Add transform for better mobile interaction */
+transform: translateZ(0);
+position: relative;
+}
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
+.menu li a:hover, .menu li a.active {
+background: rgba(255, 255, 255, 0.1);
+color: white;
+}
 
-        header h2 { font-weight: 700; font-size: 1.5rem; }
+.menu li a i { font-size: 1.2rem; }
 
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: var(--bg-card);
-            padding: 8px 16px;
-            border-radius: 50px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-        }
+/* --- ADMIN ONLY STYLES --- */
+.admin-only {
+display: none; /* Sembunyikan menu admin secara default */
+}
 
-        .avatar {
-            width: 40px; height: 40px;
-            background: var(--accent);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
+.admin-badge {
+background-color: var(--danger);
+color: white;
+font-size: 0.65rem;
+padding: 3px 8px;
+border-radius: 4px;
+margin-left: 10px;
+text-transform: uppercase;
+display: none;
+vertical-align: middle;
+}
 
-        /* --- WELCOME BANNER --- */
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--primary), #1e293b);
-            color: white;
-            padding: 2rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-        }
+.logout-btn {
+margin-top: auto;
+background: rgba(239, 68, 68, 0.1);
+color: #fca5a5;
+border: 1px solid rgba(239, 68, 68, 0.2);
+padding: 12px;
+border-radius: 8px;
+cursor: pointer;
+width: 100%;
+font-weight: 500;
+transition: var(--transition);
+/* PWA: Add touch feedback */
+-webkit-tap-highlight-color: rgba(255,255,255,0.2);
+}
 
-        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.logout-btn:hover { background: var(--danger); color: white; }
 
-        /* --- CARD --- */
-        .card {
-            background: var(--bg-card);
-            padding: 1.5rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #f1f5f9;
-            margin-bottom: 2rem;
-        }
+/* --- MAIN CONTENT --- */
+.main-content {
+margin-left: var(--sidebar-width);
+flex: 1;
+padding: 2rem;
+width: 100%;
+transition: margin-left 0.3s ease;
+}
 
-        .card h3 { 
-            font-size: 1rem; 
-            color: var(--text-main); 
-            font-weight: 700; 
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 2rem;
+}
 
-        /* --- SETTING ITEMS --- */
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .setting-item:last-child {
-            border-bottom: none;
-        }
-        .setting-item .info p {
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        .setting-item .info small {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-        .setting-item .action {
-            display: flex;
-            align-items: center;
-        }
+header h2 { font-weight: 700; font-size: 1.5rem; }
 
-        /* --- TOGGLE SWITCH --- */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: var(--accent);
-        }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
+.user-profile {
+display: flex;
+align-items: center;
+gap: 12px;
+background: var(--bg-card);
+padding: 8px 16px;
+border-radius: 50px;
+box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
 
-        /* --- BUTTONS --- */
-        .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            border: none;
-            text-decoration: none;
-        }
+.avatar {
+width: 40px; height: 40px;
+background: var(--accent);
+color: white;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-weight: 600;
+}
 
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
+/* --- WELCOME BANNER --- */
+.welcome-banner {
+background: linear-gradient(135deg, var(--primary), #1e293b);
+color: white;
+padding: 2rem;
+border-radius: 16px;
+margin-bottom: 2rem;
+position: relative;
+overflow: hidden;
+}
 
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
+.welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
 
-        .btn-outline {
-            background: transparent;
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
+/* --- CARD --- */
+.card {
+background: var(--bg-card);
+padding: 1.5rem;
+border-radius: 16px;
+box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+border: 1px solid #f1f5f9;
+margin-bottom: 2rem;
+}
 
-        .btn-outline:hover {
-            background: var(--accent);
-            color: white;
-        }
+.card h3 {
+font-size: 1rem;
+color: var(--text-main);
+font-weight: 700;
+margin-bottom: 1rem;
+display: flex;
+align-items: center;
+gap: 8px;
+}
 
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
+/* --- SETTING ITEMS --- */
+.setting-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 1rem 0;
+border-bottom: 1px solid #f1f5f9;
+}
+.setting-item:last-child {
+border-bottom: none;
+}
+.setting-item .info p {
+font-size: 0.95rem;
+font-weight: 500;
+}
+.setting-item .info small {
+font-size: 0.8rem;
+color: var(--text-muted);
+}
+.setting-item .action {
+display: flex;
+align-items: center;
+}
 
-        .btn-danger:hover {
-            background: #dc2626;
-        }
+/* --- TOGGLE SWITCH --- */
+.toggle-switch {
+position: relative;
+display: inline-block;
+width: 50px;
+height: 24px;
+}
+.toggle-switch input {
+opacity: 0;
+width: 0;
+height: 0;
+}
+.slider {
+position: absolute;
+cursor: pointer;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: #ccc;
+transition: .4s;
+border-radius: 24px;
+}
+.slider:before {
+position: absolute;
+content: "";
+height: 18px;
+width: 18px;
+left: 3px;
+bottom: 3px;
+background-color: white;
+transition: .4s;
+border-radius: 50%;
+}
+input:checked + .slider {
+background-color: var(--accent);
+}
+input:checked + .slider:before {
+transform: translateX(26px);
+}
 
-        /* --- MODAL --- */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
+/* --- BUTTONS --- */
+.btn {
+padding: 8px 16px;
+border-radius: 6px;
+font-weight: 500;
+font-size: 0.85rem;
+cursor: pointer;
+transition: var(--transition);
+display: inline-flex;
+align-items: center;
+gap: 0.5rem;
+border: none;
+text-decoration: none;
+}
 
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
+.btn-primary {
+background: var(--accent);
+color: white;
+}
 
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            transform: translateY(20px);
-            transition: transform 0.3s;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+.btn-primary:hover {
+background: #1d4ed8;
+}
 
-        .modal.active .modal-content {
-            transform: translateY(0);
-        }
+.btn-outline {
+background: transparent;
+color: var(--accent);
+border: 1px solid var(--accent);
+}
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
+.btn-outline:hover {
+background: var(--accent);
+color: white;
+}
 
-        .modal-header h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
+.btn-danger {
+background: var(--danger);
+color: white;
+}
 
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-muted);
-        }
+.btn-danger:hover {
+background: #dc2626;
+}
 
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
+/* --- MODAL --- */
+.modal {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(0, 0, 0, 0.5);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 1000;
+opacity: 0;
+visibility: hidden;
+transition: opacity 0.3s, visibility 0.3s;
+}
 
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
+.modal.active {
+opacity: 1;
+visibility: visible;
+}
 
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
+.modal-content {
+background: white;
+padding: 2rem;
+border-radius: 16px;
+width: 90%;
+max-width: 500px;
+box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+transform: translateY(20px);
+transition: transform 0.3s;
+max-height: 90vh;
+overflow-y: auto;
+}
 
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
+.modal.active .modal-content {
+transform: translateY(0);
+}
 
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-        }
+.modal-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 1.5rem;
+}
 
-        .btn-cancel {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid #e2e8f0;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
+.modal-header h3 {
+font-size: 1.25rem;
+font-weight: 700;
+}
 
-        .btn-cancel:hover {
-            background: var(--bg-body);
-        }
+.modal-close {
+background: none;
+border: none;
+font-size: 1.5rem;
+cursor: pointer;
+color: var(--text-muted);
+}
 
-        /* --- TOAST NOTIFICATION --- */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: transform 0.3s, opacity 0.3s;
-            z-index: 1000;
-            max-width: 350px;
-        }
+.form-group {
+margin-bottom: 1.5rem;
+}
 
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
+.form-group label {
+display: block;
+margin-bottom: 0.5rem;
+font-weight: 500;
+}
 
-        .toast.success {
-            border-left: 4px solid var(--success);
-        }
+.form-group input,
+.form-group select,
+.form-group textarea {
+width: 100%;
+padding: 12px;
+border: 1px solid #e2e8f0;
+border-radius: 8px;
+font-size: 1rem;
+transition: border-color 0.3s;
+}
 
-        .toast.error {
-            border-left: 4px solid var(--danger);
-        }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+outline: none;
+border-color: var(--accent);
+}
 
-        .toast.info {
-            border-left: 4px solid var(--accent);
-        }
+.form-actions {
+display: flex;
+gap: 1rem;
+justify-content: flex-end;
+margin-top: 1.5rem;
+}
 
-        /* --- MOBILE RESPONSIVE --- */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            
-            .sidebar-toggle {
-                display: block;
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-                padding-top: 70px;
-                width: 100%;
-            }
-            
-            .welcome-banner h1 { font-size: 1.5rem; }
-        }
-    </style>
+.btn-cancel {
+background: transparent;
+color: var(--text-muted);
+border: 1px solid #e2e8f0;
+padding: 12px 24px;
+border-radius: 8px;
+font-weight: 600;
+cursor: pointer;
+transition: var(--transition);
+}
+
+.btn-cancel:hover {
+background: var(--bg-body);
+}
+
+/* --- TOAST NOTIFICATION --- */
+.toast {
+position: fixed;
+bottom: 20px;
+right: 20px;
+background: white;
+padding: 15px 20px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+display: flex;
+align-items: center;
+gap: 10px;
+transform: translateY(100px);
+opacity: 0;
+transition: transform 0.3s, opacity 0.3s;
+z-index: 1000;
+max-width: 350px;
+}
+
+.toast.show {
+transform: translateY(0);
+opacity: 1;
+}
+
+.toast.success {
+border-left: 4px solid var(--success);
+}
+
+.toast.error {
+border-left: 4px solid var(--danger);
+}
+
+.toast.info {
+border-left: 4px solid var(--accent);
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+.modal-content {
+    width: 95%;
+    padding: 1.5rem;
+}
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+.sidebar {
+transform: translateX(-100%);
+/* PWA: Adjust height for mobile browsers */
+height: 100vh;
+/* PWA: Ensure safe area for notched phones */
+padding-top: env(safe-area-inset-top, 1.5rem);
+padding-bottom: env(safe-area-inset-bottom, 5rem);
+}
+
+.sidebar.active {
+transform: translateX(0);
+}
+
+.sidebar-toggle {
+display: block;
+}
+
+.main-content {
+margin-left: 0;
+padding: 1rem;
+padding-top: 70px;
+width: 100%;
+}
+
+.welcome-banner h1 { font-size: 1.5rem; }
+
+.modal-content {
+    width: 95%;
+    padding: 1.5rem;
+}
+
+.form-actions {
+    flex-direction: column;
+}
+}
+
+/* Small Mobile Responsive */
+@media (max-width: 480px) {
+.welcome-banner {
+padding: 1.5rem;
+}
+
+.welcome-banner h1 {
+font-size: 1.3rem;
+}
+
+.card {
+padding: 1rem;
+}
+}
+
+/* PWA: Add overlay for sidebar */
+.sidebar-overlay {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(0, 0, 0, 0.5);
+z-index: 99;
+opacity: 0;
+transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+display: block;
+opacity: 1;
+}
+
+/* PWA: Add visual feedback for active menu items */
+.menu li a.active::before {
+content: '';
+position: absolute;
+left: 0;
+top: 50%;
+transform: translateY(-50%);
+width: 4px;
+height: 70%;
+background-color: var(--accent);
+border-radius: 0 4px 4px 0;
+}
+
+/* PWA: Add animation for menu items */
+.menu li a::after {
+content: '';
+position: absolute;
+bottom: 0;
+left: 12px;
+width: calc(100% - 24px);
+height: 1px;
+background-color: transparent;
+transition: background-color 0.3s ease;
+}
+
+.menu li a:hover::after {
+background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* PWA: Add animation for sidebar toggle button */
+.sidebar-toggle {
+transition: all 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+transform: scale(1.05);
+}
+
+.sidebar-toggle:active {
+transform: scale(0.95);
+}
+</style>
 </head>
 <body>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <p>Memuatkan data...</p>
-        </div>
-    </div>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+<div class="loading-content">
+<div class="loading-spinner"></div>
+<p>Memuatkan data...</p>
+</div>
+</div>
 
-    <!-- Sidebar Toggle Button for Mobile -->
-    <button class="sidebar-toggle" id="sidebarToggle">
-        <i class="ph ph-list"></i>
-    </button>
+<!-- PWA: Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <aside class="sidebar" id="sidebar">
-        <div class="brand">
-            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
-            <span>KOMUNITI<br><small style="font-size: 0.7rem; opacity: 0.7;">TAMAN HARMONI</small></span>
-        </div>
-        
-        <div class="menu-group">
-            <div class="menu-title">Menu Utama</div>
-            <ul class="menu">
-                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
-                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
-                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
-            </ul>
-        </div>
+<!-- Sidebar Toggle Button for Mobile -->
+<button class="sidebar-toggle" id="sidebarToggle">
+<i class="ph ph-list"></i>
+</button>
 
-        <div class="menu-group">
-            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
-            <ul class="menu">
-                <li><a href="urus-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
-                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
-                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
-            </ul>
-        </div>
+<aside class="sidebar" id="sidebar">
+<div class="brand">
+<i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+<span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+</div>
 
-        <div class="menu-group">
-            <div class="menu-title">Perkhidmatan</div>
-            <ul class="menu">
-                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
-                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
-                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
-                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
-            </ul>
-        </div>
-        
-        <div class="menu-group">
-            <div class="menu-title">Sistem</div>
-            <ul class="menu">
-                <li><a href="#" class="active"><i class="ph ph-gear"></i> Tetapan</a></li>
-            </ul>
-        </div>
-        
-        <button class="logout-btn" id="logoutBtn" style="margin-top: auto; background: none; border: none; color: #94a3b8; padding: 12px; text-align: left; border-radius: 8px; cursor: pointer; transition: var(--transition);">
-            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
-        </button>
-    </aside>
+<div class="menu-group">
+<div class="menu-title">Menu Utama</div>
+<ul class="menu">
+<li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+<li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+<li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+</ul>
+</div>
 
-    <main class="main-content">
-        <header>
-            <div>
-                <h2>Tetapan Akaun</h2>
-                <p style="color: var(--text-muted); font-size: 0.9rem;">Urus profil dan keselamatan akaun anda.</p>
-            </div>
-            <div class="user-profile">
-                <div style="text-align: right;">
-                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
-                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
-                </div>
-                <div class="avatar" id="userAvatar">U</div>
-            </div>
-        </header>
+<div class="menu-group admin-only" id="adminMenu">
+<div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+<ul class="menu">
+<li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+<li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+<li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+</ul>
+</div>
 
-        <div class="dashboard-container">
-            
-            <div class="welcome-banner">
-                <h1>Tetapan Akaun</h1>
-                <p style="opacity: 0.9; max-width: 600px;">Kemaskini maklumat peribadi, tukar kata laluan, dan laraskan pilihan notifikasi.</p>
-                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
-                    <i class="ph ph-gear"></i>
-                </div>
-            </div>
+<div class="menu-group">
+<div class="menu-title">Perkhidmatan</div>
+<ul class="menu">
+<li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+<li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+<li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+<li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+</ul>
+</div>
 
-            <!-- Account Settings Card -->
-            <div class="card">
-                <h3><i class="ph ph-user-circle"></i> Maklumat Akaun</h3>
-                <div class="setting-item">
-                    <div class="info">
-                        <p>Nama</p>
-                        <small id="settingFullName">Memuatkan...</small>
-                    </div>
-                    <div class="action">
-                        <button class="btn btn-outline" onclick="openEditProfileModal()">Kemaskini</button>
-                    </div>
-                </div>
-                <div class="setting-item">
-                    <div class="info">
-                        <p>Emel</p>
-                        <small id="settingEmail">Memuatkan...</small>
-                    </div>
-                    <div class="action">
-                        <button class="btn btn-outline" onclick="openUpdateEmailModal()">Kemaskini</button>
-                    </div>
-                </div>
-                <div class="setting-item">
-                    <div class="info">
-                        <p>Kata Laluan</p>
-                        <small>Tukar kata laluan anda secara berkala untuk keselamatan.</small>
-                    </div>
-                    <div class="action">
-                        <button class="btn btn-outline" onclick="openChangePasswordModal()">Tukar</button>
-                    </div>
-                </div>
-            </div>
+<div class="menu-group">
+<div class="menu-title">Sistem</div>
+<ul class="menu">
+<li><a href="#" class="active"><i class="ph ph-gear"></i> Tetapan</a></li>
+</ul>
+</div>
 
-            <!-- Notification Settings Card -->
-            <div class="card">
-                <h3><i class="ph ph-bell"></i> Notifikasi</h3>
-                <div class="setting-item">
-                    <div class="info">
-                        <p>Notifikasi Acara Baru</p>
-                        <small>Terima emel apabila acara baharu ditambah.</small>
-                    </div>
-                    <div class="action">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="eventNotifications" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-                <div class="setting-item">
-                    <div class="info">
-                        <p>Peringatan Yuran Tertunggak</p>
-                        <small>Terima emel untuk yuran yang belum dibayar.</small>
-                    </div>
-                    <div class="action">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="paymentReminders">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Danger Zone Card -->
-            <div class="card" style="border-color: rgba(239, 68, 68, 0.2);">
-                <h3 style="color: var(--danger);"><i class="ph ph-warning"></i> Zon Berbahaya</h3>
-                <div class="setting-item">
-                    <div class="info">
-                        <p style="color: var(--danger);">Padam Akaun</p>
-                        <small>Tindakan ini tidak boleh dibatalkan. Semua data anda akan dipadam secara kekal.</small>
-                    </div>
-                    <div class="action">
-                        <button class="btn btn-danger" onclick="openDeleteAccountModal()">Padam Akaun</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+<button class="logout-btn" id="logoutBtn">
+<i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+</button>
+</aside>
 
-    <!-- Edit Profile Modal -->
-    <div class="modal" id="editProfileModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Kemaskini Profil</h3>
-                <button class="modal-close" id="closeEditProfileModal">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            
-            <form id="editProfileForm">
-                <div class="form-group">
-                    <label for="profileFullName">Nama Penuh</label>
-                    <input type="text" id="profileFullName" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="profilePhone">No. Telefon</label>
-                    <input type="tel" id="profilePhone" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="profileHouseNumber">No. Rumah</label>
-                    <input type="text" id="profileHouseNumber" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="profileStreetName">Nama Jalan/Lorong</label>
-                    <input type="text" id="profileStreetName" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelEditProfile">Batal</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="ph ph-check"></i>
-                        Simpan Perubahan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+<main class="main-content">
+<header>
+<div>
+<h2 id="pageTitle">Tetapan Akaun <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+<p style="color: var(--text-muted); font-size: 0.9rem;">Urus profil dan keselamatan akaun anda.</p>
+</div>
+<div class="user-profile">
+<div style="text-align: right;">
+<div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+<div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+</div>
+<div class="avatar" id="userAvatar">U</div>
+</div>
+</header>
 
-    <!-- Update Email Modal -->
-    <div class="modal" id="updateEmailModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Kemaskini Emel</h3>
-                <button class="modal-close" id="closeUpdateEmailModal">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            
-            <form id="updateEmailForm">
-                <div class="form-group">
-                    <label for="newEmail">Emel Baharu</label>
-                    <input type="email" id="newEmail" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="currentPasswordForEmail">Kata Laluan Semasa</label>
-                    <input type="password" id="currentPasswordForEmail" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelUpdateEmail">Batal</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="ph ph-check"></i>
-                        Kemaskini Emel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+<div class="dashboard-container">
 
-    <!-- Change Password Modal -->
-    <div class="modal" id="changePasswordModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Tukar Kata Laluan</h3>
-                <button class="modal-close" id="closeChangePasswordModal">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            
-            <form id="changePasswordForm">
-                <div class="form-group">
-                    <label for="currentPassword">Kata Laluan Semasa</label>
-                    <input type="password" id="currentPassword" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="newPassword">Kata Laluan Baharu</label>
-                    <input type="password" id="newPassword" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirmPassword">Sahkan Kata Laluan Baharu</label>
-                    <input type="password" id="confirmPassword" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelChangePassword">Batal</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="ph ph-key"></i>
-                        Tukar Kata Laluan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+<div class="welcome-banner">
+<h1>Tetapan Akaun</h1>
+<p style="opacity: 0.9; max-width: 600px;">Kemaskini maklumat peribadi, tukar kata laluan, dan laraskan pilihan notifikasi.</p>
+<div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+<i class="ph ph-gear"></i>
+</div>
+</div>
 
-    <!-- Delete Account Modal -->
-    <div class="modal" id="deleteAccountModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 style="color: var(--danger);">Padam Akaun</h3>
-                <button class="modal-close" id="closeDeleteAccountModal">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            
-            <form id="deleteAccountForm">
-                <div class="form-group">
-                    <p>Adakah anda pasti ingin memadam akaun anda? Tindakan ini tidak boleh dibatalkan dan semua data anda akan dipadam secara kekal.</p>
-                </div>
-                
-                <div class="form-group">
-                    <label for="deleteConfirmation">Sila taip "DELETE" untuk mengesahkan</label>
-                    <input type="text" id="deleteConfirmation" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="currentPasswordForDelete">Kata Laluan Semasa</label>
-                    <input type="password" id="currentPasswordForDelete" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelDeleteAccount">Batal</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="ph ph-trash"></i>
-                        Padam Akaun
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+<!-- Account Settings Card -->
+<div class="card">
+<h3><i class="ph ph-user-circle"></i> Maklumat Akaun</h3>
+<div class="setting-item">
+<div class="info">
+<p>Nama</p>
+<small id="settingFullName">Memuatkan...</small>
+</div>
+<div class="action">
+<button class="btn btn-outline" onclick="openEditProfileModal()">Kemaskini</button>
+</div>
+</div>
+<div class="setting-item">
+<div class="info">
+<p>Emel</p>
+<small id="settingEmail">Memuatkan...</small>
+</div>
+<div class="action">
+<button class="btn btn-outline" onclick="openUpdateEmailModal()">Kemaskini</button>
+</div>
+</div>
+<div class="setting-item">
+<div class="info">
+<p>Kata Laluan</p>
+<small>Tukar kata laluan anda secara berkala untuk keselamatan.</small>
+</div>
+<div class="action">
+<button class="btn btn-outline" onclick="openChangePasswordModal()">Tukar</button>
+</div>
+</div>
+</div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <i class="ph ph-info" id="toastIcon"></i>
-        <span id="toastMessage">Message</span>
-    </div>
+<!-- Notification Settings Card -->
+<div class="card">
+<h3><i class="ph ph-bell"></i> Notifikasi</h3>
+<div class="setting-item">
+<div class="info">
+<p>Notifikasi Acara Baru</p>
+<small>Terima emel apabila acara baharu ditambah.</small>
+</div>
+<div class="action">
+<label class="toggle-switch">
+<input type="checkbox" id="eventNotifications" checked>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+<div class="setting-item">
+<div class="info">
+<p>Peringatan Yuran Tertunggak</p>
+<small>Terima emel untuk yuran yang belum dibayar.</small>
+</div>
+<div class="action">
+<label class="toggle-switch">
+<input type="checkbox" id="paymentReminders">
+<span class="slider"></span>
+</label>
+</div>
+</div>
+</div>
 
-    <script type="module">
-        import { auth, db, signOutUser } from './firebase-init.js';
-        import { 
-            onAuthStateChanged, 
-            updatePassword, 
-            reauthenticateWithCredential,
-            EmailAuthProvider,
-            updateEmail,
-            deleteUser
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { 
-            doc, 
-            getDoc, 
-            updateDoc, 
-            deleteDoc, 
-            serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!-- Danger Zone Card -->
+<div class="card" style="border-color: rgba(239, 68, 68, 0.2);">
+<h3 style="color: var(--danger);"><i class="ph ph-warning"></i> Zon Berbahaya</h3>
+<div class="setting-item">
+<div class="info">
+<p style="color: var(--danger);">Padam Akaun</p>
+<small>Tindakan ini tidak boleh dibatalkan. Semua data anda akan dipadam secara kekal.</small>
+</div>
+<div class="action">
+<button class="btn btn-danger" onclick="openDeleteAccountModal()">Padam Akaun</button>
+</div>
+</div>
+</div>
+</div>
+</main>
 
-        // DOM Elements
-        const userNameEl = document.getElementById('userName');
-        const userRankEl = document.getElementById('userRank');
-        const userAvatarEl = document.getElementById('userAvatar');
-        const loadingOverlayEl = document.getElementById('loadingOverlay');
-        const sidebarToggleEl = document.getElementById('sidebarToggle');
-        const sidebarEl = document.getElementById('sidebar');
-        
-        // Settings Elements
-        const settingFullNameEl = document.getElementById('settingFullName');
-        const settingEmailEl = document.getElementById('settingEmail');
-        const eventNotificationsEl = document.getElementById('eventNotifications');
-        const paymentRemindersEl = document.getElementById('paymentReminders');
-        
-        // Modal Elements
-        const editProfileModalEl = document.getElementById('editProfileModal');
-        const updateEmailModalEl = document.getElementById('updateEmailModal');
-        const changePasswordModalEl = document.getElementById('changePasswordModal');
-        const deleteAccountModalEl = document.getElementById('deleteAccountModal');
-        
-        // Form Elements
-        const editProfileFormEl = document.getElementById('editProfileForm');
-        const updateEmailFormEl = document.getElementById('updateEmailForm');
-        const changePasswordFormEl = document.getElementById('changePasswordForm');
-        const deleteAccountFormEl = document.getElementById('deleteAccountForm');
-        
-        // Toast notification elements
-        const toastEl = document.getElementById('toast');
-        const toastMessageEl = document.getElementById('toastMessage');
-        const toastIconEl = document.getElementById('toastIcon');
+<!-- Edit Profile Modal -->
+<div class="modal" id="editProfileModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3>Kemaskini Profil</h3>
+<button class="modal-close" id="closeEditProfileModal">
+<i class="ph ph-x"></i>
+</button>
+</div>
 
-        // Current user data
-        let currentUser = null;
-        let currentUserData = null;
+<form id="editProfileForm">
+<div class="form-group">
+<label for="profileFullName">Nama Penuh</label>
+<input type="text" id="profileFullName" required>
+</div>
 
-        // Show loading overlay
-        const showLoading = () => {
-            loadingOverlayEl.classList.add('active');
-        };
+<div class="form-group">
+<label for="profilePhone">No. Telefon</label>
+<input type="tel" id="profilePhone" required>
+</div>
 
-        // Hide loading overlay
-        const hideLoading = () => {
-            loadingOverlayEl.classList.remove('active');
-        };
+<div class="form-group">
+<label for="profileHouseNumber">No. Rumah</label>
+<input type="text" id="profileHouseNumber" required>
+</div>
 
-        // Show toast notification
-        const showToast = (message, type = 'info') => {
-            toastMessageEl.textContent = message;
-            
-            // Reset classes
-            toastEl.className = 'toast';
-            
-            // Set appropriate class and icon based on type
-            switch(type) {
-                case 'success':
-                    toastEl.classList.add('success');
-                    toastIconEl.className = 'ph ph-check-circle';
-                    break;
-                case 'error':
-                    toastEl.classList.add('error');
-                    toastIconEl.className = 'ph ph-warning-circle';
-                    break;
-                default:
-                    toastEl.classList.add('info');
-                    toastIconEl.className = 'ph ph-info';
-            }
-            
-            // Show toast
-            toastEl.classList.add('show');
-            
-            // Hide after 3 seconds
-            setTimeout(() => {
-                toastEl.classList.remove('show');
-            }, 3000);
-        };
+<div class="form-group">
+<label for="profileStreetName">Nama Jalan/Lorong</label>
+<input type="text" id="profileStreetName" required>
+</div>
 
-        // Toggle sidebar for mobile
-        sidebarToggleEl.addEventListener('click', () => {
-            sidebarEl.classList.toggle('active');
-        });
+<div class="form-actions">
+<button type="button" class="btn-cancel" id="cancelEditProfile">Batal</button>
+<button type="submit" class="btn btn-primary">
+<i class="ph ph-check"></i>
+Simpan Perubahan
+</button>
+</div>
+</form>
+</div>
+</div>
 
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768 && 
-                !sidebarEl.contains(e.target) && 
-                !sidebarToggleEl.contains(e.target) && 
-                sidebarEl.classList.contains('active')) {
-                sidebarEl.classList.remove('active');
-            }
-        });
+<!-- Update Email Modal -->
+<div class="modal" id="updateEmailModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3>Kemaskini Emel</h3>
+<button class="modal-close" id="closeUpdateEmailModal">
+<i class="ph ph-x"></i>
+</button>
+</div>
 
-        // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
-        const updateHeaderProfile = async (uid) => {
-            try {
-                const docRef = doc(db, "users", uid); 
-                const docSnap = await getDoc(docRef);
+<form id="updateEmailForm">
+<div class="form-group">
+<label for="newEmail">Emel Baharu</label>
+<input type="email" id="newEmail" required>
+</div>
 
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    const name = data.fullName || 'Admin';
-                    userNameEl.textContent = name;
-                    userRankEl.textContent = data.memberRank || 'Admin Sistem';
-                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
-                    
-                    // Update settings display
-                    settingFullNameEl.textContent = data.fullName || 'Tiada Nama';
-                    settingEmailEl.textContent = data.email || 'Tiada Emel';
-                    
-                    // Update notification settings
-                    if (data.eventNotifications !== undefined) {
-                        eventNotificationsEl.checked = data.eventNotifications;
-                    }
-                    
-                    if (data.paymentReminders !== undefined) {
-                        paymentRemindersEl.checked = data.paymentReminders;
-                    }
-                    
-                    // Store user data
-                    currentUserData = data;
-                } else {
-                    userNameEl.textContent = 'Admin';
-                    userRankEl.textContent = 'Admin Sistem';
-                }
-            } catch (error) {
-                console.error("Ralat memuatkan profil:", error);
-                showToast("Ralat memuatkan profil.", "error");
-            }
-        };
+<div class="form-group">
+<label for="currentPasswordForEmail">Kata Laluan Semasa</label>
+<input type="password" id="currentPasswordForEmail" required>
+</div>
 
-        // --- FUNGSI 2: BUKA MODAL KEMASKINI PROFIL ---
-        window.openEditProfileModal = () => {
-            // Pre-fill form with user data
-            document.getElementById('profileFullName').value = currentUserData.fullName || '';
-            document.getElementById('profilePhone').value = currentUserData.phone || '';
-            document.getElementById('profileHouseNumber').value = currentUserData.houseNumber || '';
-            document.getElementById('profileStreetName').value = currentUserData.streetName || '';
-            
-            editProfileModalEl.classList.add('active');
-        };
+<div class="form-actions">
+<button type="button" class="btn-cancel" id="cancelUpdateEmail">Batal</button>
+<button type="submit" class="btn btn-primary">
+<i class="ph ph-check"></i>
+Kemaskini Emel
+</button>
+</div>
+</form>
+</div>
+</div>
 
-        // --- FUNGSI 3: HANTER KEMASKINI PROFIL ---
-        const submitEditProfile = async (e) => {
-            e.preventDefault();
-            
-            try {
-                showLoading();
-                
-                // Get form values
-                const fullName = document.getElementById('profileFullName').value.trim();
-                const phone = document.getElementById('profilePhone').value.trim();
-                const houseNumber = document.getElementById('profileHouseNumber').value.trim();
-                const streetName = document.getElementById('profileStreetName').value.trim();
-                
-                // Update user data in Firestore
-                const docRef = doc(db, "users", currentUser.uid);
-                await updateDoc(docRef, {
-                    fullName,
-                    phone,
-                    houseNumber,
-                    streetName,
-                    updatedAt: serverTimestamp()
-                });
-                
-                // Close modal and refresh data
-                editProfileModalEl.classList.remove('active');
-                await updateHeaderProfile(currentUser.uid);
-                
-                hideLoading();
-                showToast("Profil berjaya dikemaskini!", "success");
-                
-            } catch (error) {
-                console.error("Ralat mengemaskini profil:", error);
-                hideLoading();
-                showToast("Ralat mengemaskini profil: " + error.message, "error");
-            }
-        };
+<!-- Change Password Modal -->
+<div class="modal" id="changePasswordModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3>Tukar Kata Laluan</h3>
+<button class="modal-close" id="closeChangePasswordModal">
+<i class="ph ph-x"></i>
+</button>
+</div>
 
-        // --- FUNGSI 4: BUKA MODAL KEMASKINI EMEL ---
-        window.openUpdateEmailModal = () => {
-            // Pre-fill form with user data
-            document.getElementById('newEmail').value = currentUserData.email || '';
-            document.getElementById('currentPasswordForEmail').value = '';
-            
-            updateEmailModalEl.classList.add('active');
-        };
+<form id="changePasswordForm">
+<div class="form-group">
+<label for="currentPassword">Kata Laluan Semasa</label>
+<input type="password" id="currentPassword" required>
+</div>
 
-        // --- FUNGSI 5: HANTER KEMASKINI EMEL ---
-        const submitUpdateEmail = async (e) => {
-            e.preventDefault();
-            
-            try {
-                showLoading();
-                
-                // Get form values
-                const newEmail = document.getElementById('newEmail').value.trim();
-                const currentPassword = document.getElementById('currentPasswordForEmail').value;
-                
-                // Re-authenticate user
-                const credential = EmailAuthProvider.credential(
-                    currentUser.email, 
-                    currentPassword
-                );
-                
-                await reauthenticateWithCredential(currentUser, credential);
-                
-                // Update email in Firebase Auth
-                await updateEmail(currentUser, newEmail);
-                
-                // Update email in Firestore
-                const docRef = doc(db, "users", currentUser.uid);
-                await updateDoc(docRef, {
-                    email: newEmail,
-                    updatedAt: serverTimestamp()
-                });
-                
-                // Close modal and refresh data
-                updateEmailModalEl.classList.remove('active');
-                await updateHeaderProfile(currentUser.uid);
-                
-                hideLoading();
-                showToast("Emel berjaya dikemaskini!", "success");
-                
-            } catch (error) {
-                console.error("Ralat mengemaskini emel:", error);
-                hideLoading();
-                
-                if (error.code === 'auth/wrong-password') {
-                    showToast("Kata laluan semasa tidak tepat.", "error");
-                } else if (error.code === 'auth/email-already-in-use') {
-                    showToast("Emel ini telah digunakan. Sila gunakan emel lain.", "error");
-                } else {
-                    showToast("Ralat mengemaskini emel: " + error.message, "error");
-                }
-            }
-        };
+<div class="form-group">
+<label for="newPassword">Kata Laluan Baharu</label>
+<input type="password" id="newPassword" required>
+</div>
 
-        // --- FUNGSI 6: BUKA MODAL TUKAR KATA LALUAN ---
-        window.openChangePasswordModal = () => {
-            // Reset form
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-            
-            changePasswordModalEl.classList.add('active');
-        };
+<div class="form-group">
+<label for="confirmPassword">Sahkan Kata Laluan Baharu</label>
+<input type="password" id="confirmPassword" required>
+</div>
 
-        // --- FUNGSI 7: HANTER TUKAR KATA LALUAN ---
-        const submitChangePassword = async (e) => {
-            e.preventDefault();
-            
-            try {
-                showLoading();
-                
-                // Get form values
-                const currentPassword = document.getElementById('currentPassword').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                
-                // Validate passwords
-                if (newPassword !== confirmPassword) {
-                    showToast("Kata laluan tidak sepadan.", "error");
-                    hideLoading();
-                    return;
-                }
-                
-                if (newPassword.length < 6) {
-                    showToast("Kata laluan mesti sekurang-kurangnya 6 aksara.", "error");
-                    hideLoading();
-                    return;
-                }
-                
-                // Re-authenticate user
-                const credential = EmailAuthProvider.credential(
-                    currentUser.email, 
-                    currentPassword
-                );
-                
-                await reauthenticateWithCredential(currentUser, credential);
-                
-                // Update password
-                await updatePassword(currentUser, newPassword);
-                
-                // Close modal
-                changePasswordModalEl.classList.remove('active');
-                
-                hideLoading();
-                showToast("Kata laluan berjaya ditukar!", "success");
-                
-            } catch (error) {
-                console.error("Ralat menukar kata laluan:", error);
-                hideLoading();
-                
-                if (error.code === 'auth/wrong-password') {
-                    showToast("Kata laluan semasa tidak tepat.", "error");
-                } else {
-                    showToast("Ralat menukar kata laluan: " + error.message, "error");
-                }
-            }
-        };
+<div class="form-actions">
+<button type="button" class="btn-cancel" id="cancelChangePassword">Batal</button>
+<button type="submit" class="btn btn-primary">
+<i class="ph ph-key"></i>
+Tukar Kata Laluan
+</button>
+</div>
+</form>
+</div>
+</div>
 
-        // --- FUNGSI 8: BUKA MODAL PADAM AKAUN ---
-        window.openDeleteAccountModal = () => {
-            // Reset form
-            document.getElementById('deleteConfirmation').value = '';
-            document.getElementById('currentPasswordForDelete').value = '';
-            
-            deleteAccountModalEl.classList.add('active');
-        };
+<!-- Delete Account Modal -->
+<div class="modal" id="deleteAccountModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3 style="color: var(--danger);">Padam Akaun</h3>
+<button class="modal-close" id="closeDeleteAccountModal">
+<i class="ph ph-x"></i>
+</button>
+</div>
 
-        // --- FUNGSI 9: HANTER PADAM AKAUN ---
-        const submitDeleteAccount = async (e) => {
-            e.preventDefault();
-            
-            try {
-                // Get form values
-                const deleteConfirmation = document.getElementById('deleteConfirmation').value.trim();
-                const currentPassword = document.getElementById('currentPasswordForDelete').value;
-                
-                // Validate confirmation
-                if (deleteConfirmation !== 'DELETE') {
-                    showToast("Sila taip 'DELETE' untuk mengesahkan.", "error");
-                    return;
-                }
-                
-                showLoading();
-                
-                // Re-authenticate user
-                const credential = EmailAuthProvider.credential(
-                    currentUser.email, 
-                    currentPassword
-                );
-                
-                await reauthenticateWithCredential(currentUser, credential);
-                
-                // Delete user document in Firestore
-                const docRef = doc(db, "users", currentUser.uid);
-                await deleteDoc(docRef);
-                
-                // Delete user account in Firebase Auth
-                await deleteUser(currentUser);
-                
-                // Close modal
-                deleteAccountModalEl.classList.remove('active');
-                
-                hideLoading();
-                showToast("Akaun berjaya dipadam.", "success");
-                
-                // Redirect to login page after a short delay
-                setTimeout(() => {
-                    window.location.href = "index.html";
-                }, 2000);
-                
-            } catch (error) {
-                console.error("Ralat memadam akaun:", error);
-                hideLoading();
-                
-                if (error.code === 'auth/wrong-password') {
-                    showToast("Kata laluan semasa tidak tepat.", "error");
-                } else {
-                    showToast("Ralat memadam akaun: " + error.message, "error");
-                }
-            }
-        };
+<form id="deleteAccountForm">
+<div class="form-group">
+<p>Adakah anda pasti ingin memadam akaun anda? Tindakan ini tidak boleh dibatalkan dan semua data anda akan dipadam secara kekal.</p>
+</div>
 
-        // --- FUNGSI 10: SIMPAN TETAPAN NOTIFIKASI ---
-        const saveNotificationSettings = async () => {
-            try {
-                showLoading();
-                
-                // Get notification settings
-                const eventNotifications = eventNotificationsEl.checked;
-                const paymentReminders = paymentRemindersEl.checked;
-                
-                // Update notification settings in Firestore
-                const docRef = doc(db, "users", currentUser.uid);
-                await updateDoc(docRef, {
-                    eventNotifications,
-                    paymentReminders,
-                    updatedAt: serverTimestamp()
-                });
-                
-                hideLoading();
-                showToast("Tetapan notifikasi berjaya dikemaskini!", "success");
-                
-            } catch (error) {
-                console.error("Ralat mengemaskini tetapan notifikasi:", error);
-                hideLoading();
-                showToast("Ralat mengemaskini tetapan notifikasi: " + error.message, "error");
-            }
-        };
+<div class="form-group">
+<label for="deleteConfirmation">Sila taip "DELETE" untuk mengesahkan</label>
+<input type="text" id="deleteConfirmation" required>
+</div>
 
-        // --- EVENT LISTENERS ---
-        
-        // Notification settings
-        eventNotificationsEl.addEventListener('change', saveNotificationSettings);
-        paymentRemindersEl.addEventListener('change', saveNotificationSettings);
-        
-        // Modal event listeners
-        document.getElementById('closeEditProfileModal').addEventListener('click', () => {
-            editProfileModalEl.classList.remove('active');
-        });
-        
-        document.getElementById('closeUpdateEmailModal').addEventListener('click', () => {
-            updateEmailModalEl.classList.remove('active');
-        });
-        
-        document.getElementById('closeChangePasswordModal').addEventListener('click', () => {
-            changePasswordModalEl.classList.remove('active');
-        });
-        
-        document.getElementById('closeDeleteAccountModal').addEventListener('click', () => {
-            deleteAccountModalEl.classList.remove('active');
-        });
-        
-        document.getElementById('cancelEditProfile').addEventListener('click', () => {
-            editProfileModalEl.classList.remove('active');
-        });
-        
-        document.getElementById('cancelUpdateEmail').addEventListener('click', () => {
-            updateEmailModalEl.classList.remove('active');
-        });
-        
-        document.getElementById('cancelChangePassword').addEventListener('click', () => {
-            changePasswordModalEl.classList.remove('active');
-        });
-        
-        document.getElementById('cancelDeleteAccount').addEventListener('click', () => {
-            deleteAccountModalEl.classList.remove('active');
-        });
-        
-        // Close modals when clicking outside
-        editProfileModalEl.addEventListener('click', (e) => {
-            if (e.target === editProfileModalEl) {
-                editProfileModalEl.classList.remove('active');
-            }
-        });
-        
-        updateEmailModalEl.addEventListener('click', (e) => {
-            if (e.target === updateEmailModalEl) {
-                updateEmailModalEl.classList.remove('active');
-            }
-        });
-        
-        changePasswordModalEl.addEventListener('click', (e) => {
-            if (e.target === changePasswordModalEl) {
-                changePasswordModalEl.classList.remove('active');
-            }
-        });
-        
-        deleteAccountModalEl.addEventListener('click', (e) => {
-            if (e.target === deleteAccountModalEl) {
-                deleteAccountModalEl.classList.remove('active');
-            }
-        });
-        
-        // Form submissions
-        editProfileFormEl.addEventListener('submit', submitEditProfile);
-        updateEmailFormEl.addEventListener('submit', submitUpdateEmail);
-        changePasswordFormEl.addEventListener('submit', submitChangePassword);
-        deleteAccountFormEl.addEventListener('submit', submitDeleteAccount);
+<div class="form-group">
+<label for="currentPasswordForDelete">Kata Laluan Semasa</label>
+<input type="password" id="currentPasswordForDelete" required>
+</div>
 
-        // Event listener untuk Log Keluar
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            showLoading();
-            signOutUser().then(() => {
-                hideLoading();
-                showToast("Anda telah berjaya log keluar.", "success");
-            }).catch((error) => {
-                hideLoading();
-                console.error("Ralat log keluar:", error);
-                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
-            });
-        });
+<div class="form-actions">
+<button type="button" class="btn-cancel" id="cancelDeleteAccount">Batal</button>
+<button type="submit" class="btn btn-danger">
+<i class="ph ph-trash"></i>
+Padam Akaun
+</button>
+</div>
+</form>
+</div>
+</div>
 
-        // Auth State Change Listener
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Pengguna log masuk
-                currentUser = user;
-                showLoading();
-                
-                // Load user data
-                updateHeaderProfile(user.uid).then(() => {
-                    hideLoading();
-                }).catch((error) => {
-                    console.error("Ralat memuatkan data:", error);
-                    hideLoading();
-                    showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
-                });
-            } else {
-                // Pengguna log keluar, redirect ke halaman log masuk
-                window.location.href = "index.html";
-            }
-        });
-    </script>
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+<i class="ph ph-info" id="toastIcon"></i>
+<span id="toastMessage">Message</span>
+</div>
+
+<script type="module">
+import { auth, db, signOutUser } from './firebase-init.js';
+import {
+onAuthStateChanged,
+updatePassword,
+reauthenticateWithCredential,
+EmailAuthProvider,
+updateEmail,
+deleteUser
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+doc,
+getDoc,
+updateDoc,
+deleteDoc,
+serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// DOM Elements
+const userNameEl = document.getElementById('userName');
+const userRankEl = document.getElementById('userRank');
+const userAvatarEl = document.getElementById('userAvatar');
+const loadingOverlayEl = document.getElementById('loadingOverlay');
+const sidebarToggleEl = document.getElementById('sidebarToggle');
+const sidebarEl = document.getElementById('sidebar');
+const sidebarOverlayEl = document.getElementById('sidebarOverlay'); // PWA: New overlay element
+
+// Settings Elements
+const settingFullNameEl = document.getElementById('settingFullName');
+const settingEmailEl = document.getElementById('settingEmail');
+const eventNotificationsEl = document.getElementById('eventNotifications');
+const paymentRemindersEl = document.getElementById('paymentReminders');
+
+// Modal Elements
+const editProfileModalEl = document.getElementById('editProfileModal');
+const updateEmailModalEl = document.getElementById('updateEmailModal');
+const changePasswordModalEl = document.getElementById('changePasswordModal');
+const deleteAccountModalEl = document.getElementById('deleteAccountModal');
+
+// Form Elements
+const editProfileFormEl = document.getElementById('editProfileForm');
+const updateEmailFormEl = document.getElementById('updateEmailForm');
+const changePasswordFormEl = document.getElementById('changePasswordForm');
+const deleteAccountFormEl = document.getElementById('deleteAccountForm');
+
+// Toast notification elements
+const toastEl = document.getElementById('toast');
+const toastMessageEl = document.getElementById('toastMessage');
+const toastIconEl = document.getElementById('toastIcon');
+
+// Elemen Admin
+const adminMenuEl = document.getElementById('adminMenu');
+const adminBadgeEl = document.getElementById('adminBadge');
+
+// Current user data
+let currentUser = null;
+let currentUserData = null;
+
+// Show loading overlay
+const showLoading = () => {
+loadingOverlayEl.classList.add('active');
+};
+
+// Hide loading overlay
+const hideLoading = () => {
+loadingOverlayEl.classList.remove('active');
+};
+
+// Show toast notification
+const showToast = (message, type = 'info') => {
+toastMessageEl.textContent = message;
+
+// Reset classes
+toastEl.className = 'toast';
+
+// Set appropriate class and icon based on type
+switch(type) {
+case 'success':
+toastEl.classList.add('success');
+toastIconEl.className = 'ph ph-check-circle';
+break;
+case 'error':
+toastEl.classList.add('error');
+toastIconEl.className = 'ph ph-warning-circle';
+break;
+default:
+toastEl.classList.add('info');
+toastIconEl.className = 'ph ph-info';
+}
+
+// Show toast
+toastEl.classList.add('show');
+
+// Hide after 3 seconds
+setTimeout(() => {
+toastEl.classList.remove('show');
+}, 3000);
+};
+
+// PWA: Toggle sidebar for mobile with overlay
+const toggleSidebar = () => {
+sidebarEl.classList.toggle('active');
+sidebarOverlayEl.classList.toggle('active');
+    
+// PWA: Add haptic feedback if supported
+if (window.navigator && window.navigator.vibrate) {
+window.navigator.vibrate(50);
+}
+};
+
+// PWA: Close sidebar when clicking overlay
+sidebarOverlayEl.addEventListener('click', () => {
+sidebarEl.classList.remove('active');
+sidebarOverlayEl.classList.remove('active');
+});
+
+// PWA: Add swipe gesture support for sidebar
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', (e) => {
+touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener('touchend', (e) => {
+touchEndX = e.changedTouches[0].screenX;
+handleSwipe();
+});
+
+const handleSwipe = () => {
+// Swipe right to open sidebar
+if (touchEndX - touchStartX > 50 && touchStartX < 50) {
+sidebarEl.classList.add('active');
+sidebarOverlayEl.classList.add('active');
+}
+    
+// Swipe left to close sidebar
+if (touchStartX - touchEndX > 50 && sidebarEl.classList.contains('active')) {
+sidebarEl.classList.remove('active');
+sidebarOverlayEl.classList.remove('active');
+}
+};
+
+// Sidebar toggle event listener
+sidebarToggleEl.addEventListener('click', toggleSidebar);
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', (e) => {
+if (window.innerWidth <= 768 && 
+!sidebarEl.contains(e.target) && 
+!sidebarToggleEl.contains(e.target) && 
+sidebarEl.classList.contains('active')) {
+sidebarEl.classList.remove('active');
+sidebarOverlayEl.classList.remove('active');
+}
+});
+
+// PWA: Handle window resize
+window.addEventListener('resize', () => {
+if (window.innerWidth > 768) {
+sidebarEl.classList.remove('active');
+sidebarOverlayEl.classList.remove('active');
+}
+});
+
+// --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
+const updateHeaderProfile = async (uid) => {
+try {
+const docRef = doc(db, "users", uid);
+const docSnap = await getDoc(docRef);
+
+if (docSnap.exists()) {
+const data = docSnap.data();
+
+// Check if user is admin
+const isAdmin = data.role === 'admin';
+
+// Show/hide admin elements based on role
+if (isAdmin) {
+adminMenuEl.style.display = 'block';
+adminBadgeEl.style.display = 'inline-block';
+} else {
+adminMenuEl.style.display = 'none';
+adminBadgeEl.style.display = 'none';
+}
+
+const name = data.fullName || 'Pengguna';
+userNameEl.textContent = name;
+userRankEl.textContent = data.memberRank || 'Ahli Biasa';
+userAvatarEl.textContent = name.charAt(0).toUpperCase();
+
+// Update settings display
+settingFullNameEl.textContent = data.fullName || 'Tiada Nama';
+settingEmailEl.textContent = data.email || 'Tiada Emel';
+
+// Update notification settings
+if (data.eventNotifications !== undefined) {
+eventNotificationsEl.checked = data.eventNotifications;
+}
+
+if (data.paymentReminders !== undefined) {
+paymentRemindersEl.checked = data.paymentReminders;
+}
+
+// Store user data
+currentUserData = data;
+} else {
+userNameEl.textContent = 'Pengguna';
+userRankEl.textContent = 'Ahli Biasa';
+}
+} catch (error) {
+console.error("Ralat memuatkan profil:", error);
+showToast("Ralat memuatkan profil.", "error");
+}
+};
+
+// --- FUNGSI 2: BUKA MODAL KEMASKINI PROFIL ---
+window.openEditProfileModal = () => {
+// Pre-fill form with user data
+document.getElementById('profileFullName').value = currentUserData.fullName || '';
+document.getElementById('profilePhone').value = currentUserData.phone || '';
+document.getElementById('profileHouseNumber').value = currentUserData.houseNumber || '';
+document.getElementById('profileStreetName').value = currentUserData.streetName || '';
+
+editProfileModalEl.classList.add('active');
+};
+
+// --- FUNGSI 3: HANTER KEMASKINI PROFIL ---
+const submitEditProfile = async (e) => {
+e.preventDefault();
+
+try {
+showLoading();
+
+// Get form values
+const fullName = document.getElementById('profileFullName').value.trim();
+const phone = document.getElementById('profilePhone').value.trim();
+const houseNumber = document.getElementById('profileHouseNumber').value.trim();
+const streetName = document.getElementById('profileStreetName').value.trim();
+
+// Update user data in Firestore
+const docRef = doc(db, "users", currentUser.uid);
+await updateDoc(docRef, {
+fullName,
+phone,
+houseNumber,
+streetName,
+updatedAt: serverTimestamp()
+});
+
+// Close modal and refresh data
+editProfileModalEl.classList.remove('active');
+await updateHeaderProfile(currentUser.uid);
+
+hideLoading();
+showToast("Profil berjaya dikemaskini!", "success");
+
+} catch (error) {
+console.error("Ralat mengemaskini profil:", error);
+hideLoading();
+showToast("Ralat mengemaskini profil: " + error.message, "error");
+}
+};
+
+// --- FUNGSI 4: BUKA MODAL KEMASKINI EMEL ---
+window.openUpdateEmailModal = () => {
+// Pre-fill form with user data
+document.getElementById('newEmail').value = currentUserData.email || '';
+document.getElementById('currentPasswordForEmail').value = '';
+
+updateEmailModalEl.classList.add('active');
+};
+
+// --- FUNGSI 5: HANTER KEMASKINI EMEL ---
+const submitUpdateEmail = async (e) => {
+e.preventDefault();
+
+try {
+showLoading();
+
+// Get form values
+const newEmail = document.getElementById('newEmail').value.trim();
+const currentPassword = document.getElementById('currentPasswordForEmail').value;
+
+// Re-authenticate user
+const credential = EmailAuthProvider.credential(
+currentUser.email,
+currentPassword
+);
+
+await reauthenticateWithCredential(currentUser, credential);
+
+// Update email in Firebase Auth
+await updateEmail(currentUser, newEmail);
+
+// Update email in Firestore
+const docRef = doc(db, "users", currentUser.uid);
+await updateDoc(docRef, {
+email: newEmail,
+updatedAt: serverTimestamp()
+});
+
+// Close modal and refresh data
+updateEmailModalEl.classList.remove('active');
+await updateHeaderProfile(currentUser.uid);
+
+hideLoading();
+showToast("Emel berjaya dikemaskini!", "success");
+
+} catch (error) {
+console.error("Ralat mengemaskini emel:", error);
+hideLoading();
+
+if (error.code === 'auth/wrong-password') {
+showToast("Kata laluan semasa tidak tepat.", "error");
+} else if (error.code === 'auth/email-already-in-use') {
+showToast("Emel ini telah digunakan. Sila gunakan emel lain.", "error");
+} else {
+showToast("Ralat mengemaskini emel: " + error.message, "error");
+}
+}
+};
+
+// --- FUNGSI 6: BUKA MODAL TUKAR KATA LALUAN ---
+window.openChangePasswordModal = () => {
+// Reset form
+document.getElementById('currentPassword').value = '';
+document.getElementById('newPassword').value = '';
+document.getElementById('confirmPassword').value = '';
+
+changePasswordModalEl.classList.add('active');
+};
+
+// --- FUNGSI 7: HANTER TUKAR KATA LALUAN ---
+const submitChangePassword = async (e) => {
+e.preventDefault();
+
+try {
+showLoading();
+
+// Get form values
+const currentPassword = document.getElementById('currentPassword').value;
+const newPassword = document.getElementById('newPassword').value;
+const confirmPassword = document.getElementById('confirmPassword').value;
+
+// Validate passwords
+if (newPassword !== confirmPassword) {
+showToast("Kata laluan tidak sepadan.", "error");
+hideLoading();
+return;
+}
+
+if (newPassword.length < 6) {
+showToast("Kata laluan mesti sekurang-kurangnya 6 aksara.", "error");
+hideLoading();
+return;
+}
+
+// Re-authenticate user
+const credential = EmailAuthProvider.credential(
+currentUser.email,
+currentPassword
+);
+
+await reauthenticateWithCredential(currentUser, credential);
+
+// Update password
+await updatePassword(currentUser, newPassword);
+
+// Close modal
+changePasswordModalEl.classList.remove('active');
+
+hideLoading();
+showToast("Kata laluan berjaya ditukar!", "success");
+
+} catch (error) {
+console.error("Ralat menukar kata laluan:", error);
+hideLoading();
+
+if (error.code === 'auth/wrong-password') {
+showToast("Kata laluan semasa tidak tepat.", "error");
+} else {
+showToast("Ralat menukar kata laluan: " + error.message, "error");
+}
+}
+};
+
+// --- FUNGSI 8: BUKA MODAL PADAM AKAUN ---
+window.openDeleteAccountModal = () => {
+// Reset form
+document.getElementById('deleteConfirmation').value = '';
+document.getElementById('currentPasswordForDelete').value = '';
+
+deleteAccountModalEl.classList.add('active');
+};
+
+// --- FUNGSI 9: HANTER PADAM AKAUN ---
+const submitDeleteAccount = async (e) => {
+e.preventDefault();
+
+try {
+// Get form values
+const deleteConfirmation = document.getElementById('deleteConfirmation').value.trim();
+const currentPassword = document.getElementById('currentPasswordForDelete').value;
+
+// Validate confirmation
+if (deleteConfirmation !== 'DELETE') {
+showToast("Sila taip 'DELETE' untuk mengesahkan.", "error");
+return;
+}
+
+showLoading();
+
+// Re-authenticate user
+const credential = EmailAuthProvider.credential(
+currentUser.email,
+currentPassword
+);
+
+await reauthenticateWithCredential(currentUser, credential);
+
+// Delete user document in Firestore
+const docRef = doc(db, "users", currentUser.uid);
+await deleteDoc(docRef);
+
+// Delete user account in Firebase Auth
+await deleteUser(currentUser);
+
+// Close modal
+deleteAccountModalEl.classList.remove('active');
+
+hideLoading();
+showToast("Akaun berjaya dipadam.", "success");
+
+// Redirect to login page after a short delay
+setTimeout(() => {
+window.location.href = "index.html";
+}, 2000);
+
+} catch (error) {
+console.error("Ralat memadam akaun:", error);
+hideLoading();
+
+if (error.code === 'auth/wrong-password') {
+showToast("Kata laluan semasa tidak tepat.", "error");
+} else {
+showToast("Ralat memadam akaun: " + error.message, "error");
+}
+}
+};
+
+// --- FUNGSI 10: SIMPAN TETAPAN NOTIFIKASI ---
+const saveNotificationSettings = async () => {
+try {
+showLoading();
+
+// Get notification settings
+const eventNotifications = eventNotificationsEl.checked;
+const paymentReminders = paymentRemindersEl.checked;
+
+// Update notification settings in Firestore
+const docRef = doc(db, "users", currentUser.uid);
+await updateDoc(docRef, {
+eventNotifications,
+paymentReminders,
+updatedAt: serverTimestamp()
+});
+
+hideLoading();
+showToast("Tetapan notifikasi berjaya dikemaskini!", "success");
+
+} catch (error) {
+console.error("Ralat mengemaskini tetapan notifikasi:", error);
+hideLoading();
+showToast("Ralat mengemaskini tetapan notifikasi: " + error.message, "error");
+}
+};
+
+// --- EVENT LISTENERS ---
+
+// Notification settings
+eventNotificationsEl.addEventListener('change', saveNotificationSettings);
+paymentRemindersEl.addEventListener('change', saveNotificationSettings);
+
+// Modal event listeners
+document.getElementById('closeEditProfileModal').addEventListener('click', () => {
+editProfileModalEl.classList.remove('active');
+});
+
+document.getElementById('closeUpdateEmailModal').addEventListener('click', () => {
+updateEmailModalEl.classList.remove('active');
+});
+
+document.getElementById('closeChangePasswordModal').addEventListener('click', () => {
+changePasswordModalEl.classList.remove('active');
+});
+
+document.getElementById('closeDeleteAccountModal').addEventListener('click', () => {
+deleteAccountModalEl.classList.remove('active');
+});
+
+document.getElementById('cancelEditProfile').addEventListener('click', () => {
+editProfileModalEl.classList.remove('active');
+});
+
+document.getElementById('cancelUpdateEmail').addEventListener('click', () => {
+updateEmailModalEl.classList.remove('active');
+});
+
+document.getElementById('cancelChangePassword').addEventListener('click', () => {
+changePasswordModalEl.classList.remove('active');
+});
+
+document.getElementById('cancelDeleteAccount').addEventListener('click', () => {
+deleteAccountModalEl.classList.remove('active');
+});
+
+// Close modals when clicking outside
+editProfileModalEl.addEventListener('click', (e) => {
+if (e.target === editProfileModalEl) {
+editProfileModalEl.classList.remove('active');
+}
+});
+
+updateEmailModalEl.addEventListener('click', (e) => {
+if (e.target === updateEmailModalEl) {
+updateEmailModalEl.classList.remove('active');
+}
+});
+
+changePasswordModalEl.addEventListener('click', (e) => {
+if (e.target === changePasswordModalEl) {
+changePasswordModalEl.classList.remove('active');
+}
+});
+
+deleteAccountModalEl.addEventListener('click', (e) => {
+if (e.target === deleteAccountModalEl) {
+deleteAccountModalEl.classList.remove('active');
+}
+});
+
+// Form submissions
+editProfileFormEl.addEventListener('submit', submitEditProfile);
+updateEmailFormEl.addEventListener('submit', submitUpdateEmail);
+changePasswordFormEl.addEventListener('submit', submitChangePassword);
+deleteAccountFormEl.addEventListener('submit', submitDeleteAccount);
+
+// Event listener untuk Log Keluar
+document.getElementById('logoutBtn').addEventListener('click', () => {
+showLoading();
+signOutUser().then(() => {
+hideLoading();
+showToast("Anda telah berjaya log keluar.", "success");
+}).catch((error) => {
+hideLoading();
+console.error("Ralat log keluar:", error);
+showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+});
+});
+
+// Auth State Change Listener
+onAuthStateChanged(auth, (user) => {
+if (user) {
+// Pengguna log masuk
+currentUser = user;
+showLoading();
+
+// Load user data
+updateHeaderProfile(user.uid).then(() => {
+hideLoading();
+}).catch((error) => {
+console.error("Ralat memuatkan data:", error);
+hideLoading();
+showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
+});
+} else {
+// Pengguna log keluar, redirect ke halaman log masuk
+window.location.href = "index.html";
+}
+});
+</script>
 </body>
 </html>
