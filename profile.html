@@ -163,6 +163,12 @@
             flex-direction: column;
             z-index: 100;
             transition: transform 0.3s ease;
+            /* PWA: Make sidebar scrollable on mobile */
+            overflow-y: auto;
+            /* PWA: Enable smooth scrolling for touch devices */
+            -webkit-overflow-scrolling: touch;
+            /* PWA: Add padding at bottom for better mobile experience */
+            padding-bottom: 5rem;
         }
 
         .sidebar-toggle {
@@ -178,6 +184,8 @@
             padding: 10px;
             cursor: pointer;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            /* PWA: Add haptic feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
         .brand {
@@ -212,6 +220,10 @@
             border-radius: 8px;
             transition: var(--transition);
             font-size: 0.95rem;
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+            /* PWA: Add transform for better mobile interaction */
+            transform: translateZ(0);
         }
 
         .menu li a:hover, .menu li a.active {
@@ -253,6 +265,8 @@
             width: 100%;
             font-weight: 500;
             transition: var(--transition);
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
         .logout-btn:hover { background: var(--danger); color: white; }
@@ -471,10 +485,22 @@
             border-left: 4px solid var(--accent);
         }
 
+        /* Tablet Responsive */
+        @media (max-width: 1024px) {
+            .profile-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                /* PWA: Adjust height for mobile browsers */
+                height: 100vh;
+                /* PWA: Ensure safe area for notched phones */
+                padding-top: env(safe-area-inset-top, 1.5rem);
+                padding-bottom: env(safe-area-inset-bottom, 5rem);
             }
             
             .sidebar.active {
@@ -516,6 +542,94 @@
                 max-width: none;
             }
         }
+
+        /* Small Mobile Responsive */
+        @media (max-width: 480px) {
+            .welcome-banner {
+                padding: 1.5rem;
+            }
+            
+            .welcome-banner h1 {
+                font-size: 1.3rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+            
+            .identity-card {
+                padding: 1.5rem;
+            }
+            
+            .form-card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* PWA: Add overlay for sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* PWA: Add visual feedback for active menu items */
+        .menu li a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 70%;
+            background-color: var(--accent);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* PWA: Add animation for menu items */
+        .menu li a {
+            position: relative;
+        }
+
+        .menu li a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 12px;
+            width: calc(100% - 24px);
+            height: 1px;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu li a:hover::after {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* PWA: Add animation for sidebar toggle button */
+        .sidebar-toggle {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
@@ -546,6 +660,9 @@
         <i class="ph ph-wifi-slash" style="vertical-align: middle; margin-right: 8px;"></i>
         Anda sedang dalam mod luar talian. Sesetengah fungsi mungkin tidak tersedia.
     </div>
+
+    <!-- PWA: Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Sidebar Toggle Button for Mobile -->
     <button class="sidebar-toggle" id="sidebarToggle">
@@ -722,6 +839,7 @@
         const loadingOverlayEl = document.getElementById('loadingOverlay');
         const sidebarToggleEl = document.getElementById('sidebarToggle');
         const sidebarEl = document.getElementById('sidebar');
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay'); // PWA: New overlay element
         const avatarUploadBtnEl = document.getElementById('avatarUploadBtn');
         
         // Display Elements (Left Card)
@@ -801,10 +919,52 @@
             }, 3000);
         };
 
-        // Toggle sidebar for mobile
-        sidebarToggleEl.addEventListener('click', () => {
+        // PWA: Toggle sidebar for mobile with overlay
+        const toggleSidebar = () => {
             sidebarEl.classList.toggle('active');
+            sidebarOverlayEl.classList.toggle('active');
+            
+            // PWA: Add haptic feedback if supported
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+            }
+        };
+
+        // PWA: Close sidebar when clicking overlay
+        sidebarOverlayEl.addEventListener('click', () => {
+            sidebarEl.classList.remove('active');
+            sidebarOverlayEl.classList.remove('active');
         });
+
+        // PWA: Add swipe gesture support for sidebar
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        const handleSwipe = () => {
+            // Swipe right to open sidebar
+            if (touchEndX - touchStartX > 50 && touchStartX < 50) {
+                sidebarEl.classList.add('active');
+                sidebarOverlayEl.classList.add('active');
+            }
+            
+            // Swipe left to close sidebar
+            if (touchStartX - touchEndX > 50 && sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        };
+
+        // Sidebar toggle event listener
+        sidebarToggleEl.addEventListener('click', toggleSidebar);
 
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
@@ -813,6 +973,15 @@
                 !sidebarToggleEl.contains(e.target) && 
                 sidebarEl.classList.contains('active')) {
                 sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        });
+
+        // PWA: Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
             }
         });
 
