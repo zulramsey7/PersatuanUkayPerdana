@@ -1,7 +1,7 @@
 {
-  "name": "Portal Komuniti Persatuan Penduduk",
-  "short_name": "Portal Komuniti",
-  "description": "Portal komuniti untuk pengurusan dan interaksi ahli persatuan penduduk.",
+  "name": "Persatuan Ukay Perdana",
+  "short_name": "Persatuan Ukay Perdana",
+  "description": "Persatuan Ukay Perdana untuk pengurusan dan interaksi ahli persatuan penduduk.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f1f5f9",
@@ -20,3 +20,4 @@
     }
   ]
 }
+
