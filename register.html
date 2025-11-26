@@ -257,6 +257,32 @@
             object-fit: cover; /* Pastikan gambar tidak terdistorsi */
             border: 3px solid #e5e7eb; /* Tambah border kelabu nipis (opsional) */
         }
+        
+        /* KEMASKINI: Gaya untuk butang Daftar Sekarang - warna biru sama seperti Log Masuk */
+        .btn-primary {
+            background-color: #2563eb; /* Warna biru yang sama dengan butang Log Masuk */
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8; /* Warna biru yang lebih gelap apabila hover */
+        }
+
+        .btn-primary:disabled {
+            background-color: #94a3b8; /* Warna kelabu apabila butang dilumpuhkan */
+            cursor: not-allowed;
+        }
     </style>
 </body>
 </html>
