@@ -14,9 +14,12 @@
     <!-- PWA: Pautan ke Manifest -->
     <link rel="manifest" href="/manifest.json">
     
+    <!-- PWA: Preload Critical Resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+    <link rel="preload" href="https://unpkg.com/@phosphor-icons/web" as="script">
+    
     <title>Persatuan UKAY PERDANA</title>
     
-    <!-- PWA: Guna font yang sama dengan dashboard untuk konsistensi -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
@@ -47,6 +50,145 @@
             background-color: var(--bg-body);
             color: var(--text-main);
             line-height: 1.6;
+        }
+
+        /* PWA: Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* PWA: Install Prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            max-width: 300px;
+            transform: translateY(150%);
+            transition: transform 0.3s ease;
+        }
+
+        .install-prompt.show {
+            transform: translateY(0);
+        }
+
+        .install-prompt button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .install-prompt button:hover {
+            background: #1d4ed8;
+        }
+
+        .install-prompt .close-btn {
+            background: transparent;
+            padding: 4px;
+            margin-left: auto;
+        }
+
+        /* PWA: Offline Banner */
+        .offline-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--warning);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .offline-banner.show {
+            display: block;
+        }
+
+        /* PWA: Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--accent);
         }
 
         /* Navigation */
@@ -109,9 +251,19 @@
             background-color: #1d4ed8;
         }
 
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
         /* Hero Section */
         .hero {
-            background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://picsum.photos/seed/community/1600/800.jpg');
+            background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://i.ibb.co/ksVDkkqn/Whats-App-Image-2025-08-21-at-14-09-04.jpg');
             background-size: cover;
             background-position: center;
             color: white;
@@ -399,13 +551,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 70px;
-            height: 70px;
-            background: var(--primary);
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            border-radius: 50%;
+            width: 80px;
+            height: 80px;
             margin: 0 auto 1rem;
         }
 
@@ -534,10 +681,23 @@
             text-decoration: underline;
         }
 
+        /* Gaya untuk logo di bahagian header login modal */
+        .login-logo {
+            width: 80px;  /* Saiz lebar logo */
+            height: 80px; /* Saiz tinggi logo */
+            border-radius: 50%; /* Jadikan logo berbentuk bulat */
+            object-fit: cover; /* Pastikan gambar tidak terdistorsi */
+            border: 3px solid #e5e7eb; /* Tambah border kelabu nipis (opsional) */
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .nav-links {
                 display: none;
+            }
+            
+            .mobile-menu-toggle {
+                display: block;
             }
 
             .hero h1 {
@@ -551,10 +711,43 @@
             .membership-cards {
                 grid-template-columns: 1fr;
             }
+            
+            .install-prompt {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- PWA Install Prompt -->
+    <div class="install-prompt" id="installPrompt">
+        <i class="ph ph-download-simple" style="font-size: 1.5rem;"></i>
+        <div>
+            <div style="font-weight: 600;">Pasang Aplikasi</div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">Pasang aplikasi untuk pengalaman lebih baik</div>
+        </div>
+        <button id="installBtn">Pasang</button>
+        <button class="close-btn" id="closeInstallPrompt">
+            <i class="ph ph-x"></i>
+        </button>
+    </div>
+
+    <!-- Offline Banner -->
+    <div class="offline-banner" id="offlineBanner">
+        <i class="ph ph-wifi-slash" style="vertical-align: middle; margin-right: 8px;"></i>
+        Anda sedang dalam mod luar talian. Sesetengah fungsi mungkin tidak tersedia.
+    </div>
+
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
@@ -569,6 +762,9 @@
                 <li><a href="#register">Daftar</a></li>
                 <li><a href="#contact">Hubungi</a></li>
             </ul>
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                <i class="ph ph-list"></i>
+            </button>
             <button class="login-btn" id="openLoginModal">Log Masuk</button>
         </div>
     </nav>
@@ -601,7 +797,7 @@
                     <p><strong>Misi kami</strong> adalah untuk menjadi wadah perpaduan penduduk, menyediakan bantuan sosial, menganjurkan aktiviti komuniti yang membina, dan menjadi suara penduduk dalam isu-isu kejiranan.</p>
                 </div>
                 <div class="about-image">
-                    <img src="https://picsum.photos/seed/community2/600/400.jpg" alt="Gambar aktiviti persatuan">
+                    <img src="https://i.ibb.co/ksVDkkqn/Whats-App-Image-2025-08-21-at-14-09-04.jpg" alt="Gambar aktiviti persatuan">
                 </div>
             </div>
         </div>
@@ -618,7 +814,7 @@
             <div class="membership-cards">
                 <div class="membership-card">
                     <h3>Ahli Persatuan</h3>
-                    <div class="price">RM5<span style="font-size: 1rem; font-weight: 400;">/bulan
+                    <div class="price">RM5<span style="font-size: 1rem; font-weight: 400;">/bulan</span></div>
                     <ul>
                         <li><i class="ph ph-check-circle"></i> Bantuan kewangan untuk musibah (kemalangan, kebakaran, banjir)</li>
                         <li><i class="ph ph-check-circle"></i> Sumbangan ikhlas untuk kematian ahli keluarga</li>
@@ -694,7 +890,8 @@
             <button class="close-modal" id="closeLoginModal">&times;</button>
             <div class="login-header">
                 <div class="logo-placeholder">
-                    <i class="ph ph-house-line" style="font-size: 2.5rem;"></i>
+                    <!-- GANTIAN IKON DENGAN LOGO -->
+                    <img src="https://i.ibb.co/bR6tMhrv/icon-512x512.png" alt="Logo Persatuan UKAY PERDANA" class="login-logo">
                 </div> 
                 <h2>PERSATUAN UKAY PERDANA</h2>
                 <p>Sila log masuk untuk mengakses sistem persatuan.</p>
@@ -731,6 +928,12 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="ph ph-info" id="toastIcon"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
     <script type="module" src="./firebase-init.js"></script>
     
     <script type="module">
@@ -750,6 +953,63 @@
         const alertBox = document.getElementById('alert-box');
         const togglePasswordBtn = document.getElementById('togglePassword');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const navLinks = document.querySelector('.nav-links');
+        
+        // PWA Elements
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const installPromptEl = document.getElementById('installPrompt');
+        const installBtnEl = document.getElementById('installBtn');
+        const closeInstallPromptEl = document.getElementById('closeInstallPrompt');
+        const offlineBannerEl = document.getElementById('offlineBanner');
+        const toastEl = document.getElementById('toast');
+        const toastMessageEl = document.getElementById('toastMessage');
+        const toastIconEl = document.getElementById('toastIcon');
+        
+        // PWA Variables
+        let deferredPrompt = null;
+        let isOnline = navigator.onLine;
+
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // Show toast notification
+        const showToast = (message, type = 'info') => {
+            toastMessageEl.textContent = message;
+            
+            // Reset classes
+            toastEl.className = 'toast';
+            
+            // Set appropriate class and icon based on type
+            switch(type) {
+                case 'success':
+                    toastEl.classList.add('success');
+                    toastIconEl.className = 'ph ph-check-circle';
+                    break;
+                case 'error':
+                    toastEl.classList.add('error');
+                    toastIconEl.className = 'ph ph-warning-circle';
+                    break;
+                default:
+                    toastEl.classList.add('info');
+                    toastIconEl.className = 'ph ph-info';
+            }
+            
+            // Show toast
+            toastEl.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        };
 
         // Modal Functions
         const openLoginModal = () => {
@@ -770,6 +1030,11 @@
             }
         });
 
+        // Mobile menu toggle
+        mobileMenuToggle.addEventListener('click', () => {
+            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+        });
+
         // UI Functions
         const setLoading = (isLoading) => {
             if (isLoading) {
@@ -784,7 +1049,7 @@
             }
         };
 
-        // PWA: Fungsi papar mesej yang lebih baik dengan CSS variables
+        // Fungsi papar mesej yang lebih baik dengan CSS variables
         const showMessage = (msg, isError = true) => {
             alertBox.textContent = msg;
             alertBox.style.display = "block";
@@ -800,7 +1065,7 @@
             }
         };
 
-        // PWA: Fungsi toggle kata laluan yang lebih moden
+        // Fungsi toggle kata laluan yang lebih moden
         const togglePassword = () => {
             const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passInput.setAttribute('type', type);
@@ -811,7 +1076,7 @@
         };
         togglePasswordBtn.addEventListener('click', togglePassword);
 
-        // PWA: Ganti alert() dengan mesej yang lebih mesra
+        // Ganti alert() dengan mesej yang lebih mesra
         forgotPasswordLink.addEventListener('click', (e) => {
             e.preventDefault();
             showMessage('Fungsi reset kata laluan akan datang. Sila hubungi admin.', true);
@@ -822,6 +1087,12 @@
             e.preventDefault(); 
             const email = emailInput.value;
             const password = passInput.value;
+
+            // Check if online before logging in
+            if (!isOnline) {
+                showMessage('Tidak dapat log masuk dalam mod luar talian.', true);
+                return;
+            }
 
             setLoading(true);
 
@@ -877,12 +1148,73 @@
             });
         });
 
-        // PWA: Daftarkan Service Worker
+        // --- PWA: INSTALL PROMPT ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install banner
+            setTimeout(() => {
+                installPromptEl.classList.add('show');
+            }, 3000);
+        });
+
+        installBtnEl.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                showToast('Prom pemasangan tidak tersedia', 'info');
+                return;
+            }
+            
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+            
+            // Hide the install banner
+            installPromptEl.classList.remove('show');
+            
+            if (outcome === 'accepted') {
+                showToast('Aplikasi berjaya dipasang!', 'success');
+            }
+        });
+
+        closeInstallPromptEl.addEventListener('click', () => {
+            installPromptEl.classList.remove('show');
+        });
+
+        // --- PWA: OFFLINE/ONLINE DETECTION ---
+        window.addEventListener('online', () => {
+            isOnline = true;
+            offlineBannerEl.classList.remove('show');
+            showToast('Sambungan internet dipulihkan', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            offlineBannerEl.classList.add('show');
+        });
+
+        // --- PWA: DAFTARKAN SERVICE WORKER ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    showToast('Kemas kini aplikasi tersedia. Sila muat semula halaman.', 'info');
+                                }
+                            });
+                        });
                     })
                     .catch(error => {
                         console.log('ServiceWorker registration failed: ', error);

@@ -14,6 +14,10 @@
     <!-- PWA: Pautan ke Manifest -->
     <link rel="manifest" href="/manifest.json">
     
+    <!-- PWA: Preload Critical Resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+    <link rel="preload" href="https://unpkg.com/@phosphor-icons/web" as="script">
+    
     <title>Profil Saya - Portal Komuniti</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -83,6 +87,68 @@
             width: 40px;
             height: 40px;
             margin: 0 auto 15px;
+        }
+
+        /* --- PWA INSTALL PROMPT --- */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            max-width: 300px;
+            transform: translateY(150%);
+            transition: transform 0.3s ease;
+        }
+
+        .install-prompt.show {
+            transform: translateY(0);
+        }
+
+        .install-prompt button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .install-prompt button:hover {
+            background: #1d4ed8;
+        }
+
+        .install-prompt .close-btn {
+            background: transparent;
+            padding: 4px;
+            margin-left: auto;
+        }
+
+        /* --- OFFLINE BANNER --- */
+        .offline-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--warning);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .offline-banner.show {
+            display: block;
         }
 
         /* --- SIDEBAR --- */
@@ -369,13 +435,6 @@
             padding-top: 1.5rem;
         }
 
-        /* Password Change Section */
-        .password-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid #f1f5f9;
-        }
-
         /* Toast Notification */
         .toast {
             position: fixed;
@@ -450,6 +509,12 @@
             }
             
             .welcome-banner h1 { font-size: 1.5rem; }
+            
+            .install-prompt {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
         }
     </style>
 </head>
@@ -461,6 +526,25 @@
             <div class="loading-spinner"></div>
             <p>Memuatkan data...</p>
         </div>
+    </div>
+
+    <!-- PWA Install Prompt -->
+    <div class="install-prompt" id="installPrompt">
+        <i class="ph ph-download-simple" style="font-size: 1.5rem;"></i>
+        <div>
+            <div style="font-weight: 600;">Pasang Aplikasi</div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">Pasang aplikasi untuk pengalaman lebih baik</div>
+        </div>
+        <button id="installBtn">Pasang</button>
+        <button class="close-btn" id="closeInstallPrompt">
+            <i class="ph ph-x"></i>
+        </button>
+    </div>
+
+    <!-- Offline Banner -->
+    <div class="offline-banner" id="offlineBanner">
+        <i class="ph ph-wifi-slash" style="vertical-align: middle; margin-right: 8px;"></i>
+        Anda sedang dalam mod luar talian. Sesetengah fungsi mungkin tidak tersedia.
     </div>
 
     <!-- Sidebar Toggle Button for Mobile -->
@@ -615,41 +699,7 @@
                             </button>
                         </div>
                     </form>
-
-                    <div class="password-section">
-                        <div class="form-header">
-                            <h3>Tukar Kata Laluan</h3>
-                            <p>Untuk keselamatan akaun anda, tukar kata laluan secara berkala.</p>
-                        </div>
-
-                        <form id="changePasswordForm">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="currentPassword">Kata Laluan Semasa</label>
-                                    <input type="password" id="currentPassword" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="newPassword">Kata Laluan Baharu</label>
-                                    <input type="password" id="newPassword" required minlength="6">
-                                    <small style="color: #94a3b8; font-size: 0.75rem;">Minimum 6 aksara</small>
-                                </div>
-
-                                <div class="form-group full-width">
-                                    <label for="confirmPassword">Sahkan Kata Laluan Baharu</label>
-                                    <input type="password" id="confirmPassword" required minlength="6">
-                                </div>
-                            </div>
-                            
-                            <div class="form-actions">
-                                <button type="submit" class="btn-save" id="changePasswordBtn">
-                                    <i class="ph ph-lock"></i> Tukar Kata Laluan
-                                </button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
-
             </div>
         </div>
     </main>
@@ -662,14 +712,12 @@
 
     <script type="module">
         import { auth, db, signOutUser } from './firebase-init.js'; 
-        import { onAuthStateChanged, updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ID Elemen DOM
         const updateForm = document.getElementById('updateProfileForm');
-        const passwordForm = document.getElementById('changePasswordForm');
         const saveBtn = document.getElementById('saveBtn');
-        const changePasswordBtn = document.getElementById('changePasswordBtn');
         const cancelBtn = document.getElementById('cancelBtn');
         const loadingOverlayEl = document.getElementById('loadingOverlay');
         const sidebarToggleEl = document.getElementById('sidebarToggle');
@@ -698,6 +746,16 @@
         const toastEl = document.getElementById('toast');
         const toastMessageEl = document.getElementById('toastMessage');
         const toastIconEl = document.getElementById('toastIcon');
+
+        // PWA Elements
+        const installPromptEl = document.getElementById('installPrompt');
+        const installBtnEl = document.getElementById('installBtn');
+        const closeInstallPromptEl = document.getElementById('closeInstallPrompt');
+        const offlineBannerEl = document.getElementById('offlineBanner');
+        
+        // PWA Variables
+        let deferredPrompt = null;
+        let isOnline = navigator.onLine;
 
         // Store original form values
         let originalFormValues = {};
@@ -778,12 +836,78 @@
             document.getElementById('profilePhone').value = originalFormValues.profilePhone;
         };
 
+        // --- PWA: INSTALL PROMPT ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install banner
+            setTimeout(() => {
+                installPromptEl.classList.add('show');
+            }, 3000);
+        });
+
+        installBtnEl.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                showToast('Prom pemasangan tidak tersedia', 'info');
+                return;
+            }
+            
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+            
+            // Hide the install banner
+            installPromptEl.classList.remove('show');
+            
+            if (outcome === 'accepted') {
+                showToast('Aplikasi berjaya dipasang!', 'success');
+            }
+        });
+
+        closeInstallPromptEl.addEventListener('click', () => {
+            installPromptEl.classList.remove('show');
+        });
+
+        // --- PWA: OFFLINE/ONLINE DETECTION ---
+        window.addEventListener('online', () => {
+            isOnline = true;
+            offlineBannerEl.classList.remove('show');
+            showToast('Sambungan internet dipulihkan', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            offlineBannerEl.classList.add('show');
+        });
+
         // --- 1. LOAD DATA ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 showLoading();
                 
                 try {
+                    // Check if online first
+                    if (!isOnline) {
+                        // Try to load from cache if offline
+                        const cachedData = localStorage.getItem('userProfile');
+                        if (cachedData) {
+                            const data = JSON.parse(cachedData);
+                            populateProfileData(data, user);
+                            showToast('Memuatkan data dari cache', 'info');
+                        } else {
+                            showToast('Tiada data tersedia dalam mod luar talian', 'error');
+                        }
+                        hideLoading();
+                        return;
+                    }
+                    
                     const docRef = doc(db, "users", user.uid);
                     const docSnap = await getDoc(docRef);
 
@@ -793,63 +917,10 @@
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         
-                        // Isi Form
-                        const name = data.fullName || '';
-                        const phone = data.phone || '';
-                        const houseNumber = data.houseNumber || '';
-                        const streetName = data.streetName || '';
+                        // Cache the data for offline use
+                        localStorage.setItem('userProfile', JSON.stringify(data));
                         
-                        document.getElementById('profileName').value = name;
-                        document.getElementById('profilePhone').value = phone;
-                        document.getElementById('houseNumber').value = houseNumber;
-                        document.getElementById('streetName').value = streetName;
-                        
-                        // Store original values
-                        originalFormValues = {
-                            profileName: name,
-                            houseNumber: houseNumber,
-                            streetName: streetName,
-                            profilePhone: phone
-                        };
-                        
-                        // Isi Kad Identiti (Kiri)
-                        displayName.textContent = name || 'Ahli';
-                        displayAvatar.textContent = (name || 'A').charAt(0).toUpperCase();
-                        displayRole.textContent = data.role === 'admin' ? 'Admin Sistem' : (data.memberRank || 'Ahli Penduduk');
-                        
-                        // Format Tarikh Join
-                        if (data.joinedAt && data.joinedAt.toDate) {
-                            joinDateEl.textContent = data.joinedAt.toDate().toLocaleDateString('ms-MY');
-                        }
-
-                        // Status Badge
-                        if(data.status && data.status.toLowerCase() === 'aktif') {
-                            statusBadge.textContent = 'AKTIF';
-                            statusBadge.style.color = 'var(--success)';
-                        } else {
-                            statusBadge.textContent = 'TERTANGGUH';
-                            statusBadge.style.color = 'var(--danger)';
-                        }
-                        
-                        // Display address and phone
-                        const address = houseNumber && streetName ? `${houseNumber}, ${streetName}` : (houseNumber || streetName || 'Tiada');
-                        addressDisplayEl.textContent = address;
-                        phoneDisplayEl.textContent = phone || 'Tiada';
-                        
-                        // Update header profile
-                        userNameEl.textContent = name || 'Ahli';
-                        userRankEl.textContent = data.memberRank || 'Ahli Biasa';
-                        userAvatarEl.textContent = (name || 'A').charAt(0).toUpperCase();
-                        
-                        // Show admin menu if user is admin
-                        if (data.role === 'admin') {
-                            adminMenuEl.style.display = 'block';
-                            adminBadgeEl.style.display = 'inline-block';
-                        } else {
-                            adminMenuEl.style.display = 'none';
-                            adminBadgeEl.style.display = 'none';
-                        }
-
+                        populateProfileData(data, user);
                     } else {
                         // Fallback jika DB kosong
                          document.getElementById('profileName').value = user.displayName || '';
@@ -876,12 +947,78 @@
             }
         });
 
+        // Function to populate profile data
+        const populateProfileData = (data, user) => {
+            // Isi Form
+            const name = data.fullName || '';
+            const phone = data.phone || '';
+            const houseNumber = data.houseNumber || '';
+            const streetName = data.streetName || '';
+            
+            document.getElementById('profileName').value = name;
+            document.getElementById('profilePhone').value = phone;
+            document.getElementById('houseNumber').value = houseNumber;
+            document.getElementById('streetName').value = streetName;
+            
+            // Store original values
+            originalFormValues = {
+                profileName: name,
+                houseNumber: houseNumber,
+                streetName: streetName,
+                profilePhone: phone
+            };
+            
+            // Isi Kad Identiti (Kiri)
+            displayName.textContent = name || 'Ahli';
+            displayAvatar.textContent = (name || 'A').charAt(0).toUpperCase();
+            displayRole.textContent = data.role === 'admin' ? 'Admin Sistem' : (data.memberRank || 'Ahli Penduduk');
+            
+            // Format Tarikh Join
+            if (data.joinedAt && data.joinedAt.toDate) {
+                joinDateEl.textContent = data.joinedAt.toDate().toLocaleDateString('ms-MY');
+            }
+
+            // Status Badge
+            if(data.status && data.status.toLowerCase() === 'aktif') {
+                statusBadge.textContent = 'AKTIF';
+                statusBadge.style.color = 'var(--success)';
+            } else {
+                statusBadge.textContent = 'TERTANGGUH';
+                statusBadge.style.color = 'var(--danger)';
+            }
+            
+            // Display address and phone
+            const address = houseNumber && streetName ? `${houseNumber}, ${streetName}` : (houseNumber || streetName || 'Tiada');
+            addressDisplayEl.textContent = address;
+            phoneDisplayEl.textContent = phone || 'Tiada';
+            
+            // Update header profile
+            userNameEl.textContent = name || 'Ahli';
+            userRankEl.textContent = data.memberRank || 'Ahli Biasa';
+            userAvatarEl.textContent = (name || 'A').charAt(0).toUpperCase();
+            
+            // Show admin menu if user is admin
+            if (data.role === 'admin') {
+                adminMenuEl.style.display = 'block';
+                adminBadgeEl.style.display = 'inline-block';
+            } else {
+                adminMenuEl.style.display = 'none';
+                adminBadgeEl.style.display = 'none';
+            }
+        };
+
         // --- 2. SAVE PROFILE DATA ---
         updateForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!hasFormChanges()) {
                 showToast("Tiada perubahan untuk disimpan.", "info");
+                return;
+            }
+            
+            // Check if online before saving
+            if (!isOnline) {
+                showToast("Tidak dapat menyimpan data dalam mod luar talian.", "error");
                 return;
             }
             
@@ -919,6 +1056,18 @@
                     profilePhone: newPhone
                 };
                 
+                // Update cache
+                const cachedData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                const updatedData = {
+                    ...cachedData,
+                    fullName: newName,
+                    phone: newPhone,
+                    houseNumber: newHouse,
+                    streetName: newStreet,
+                    updatedAt: new Date()
+                };
+                localStorage.setItem('userProfile', JSON.stringify(updatedData));
+                
                 // Update UI serta merta
                 displayName.textContent = newName;
                 displayAvatar.textContent = newName.charAt(0).toUpperCase();
@@ -941,61 +1090,7 @@
             }
         });
 
-        // --- 3. CHANGE PASSWORD ---
-        passwordForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            // Validate passwords
-            if (newPassword !== confirmPassword) {
-                showToast("Kata laluan baharu tidak sepadan.", "error");
-                return;
-            }
-            
-            if (newPassword.length < 6) {
-                showToast("Kata laluan mesti sekurang-kurangnya 6 aksara.", "error");
-                return;
-            }
-            
-            changePasswordBtn.disabled = true;
-            changePasswordBtn.innerHTML = '<i class="ph ph-spinner-gap" style="animation: spin 1s linear infinite;"></i> Mengubah...';
-            
-            const user = auth.currentUser;
-            if (!user) return;
-            
-            try {
-                // Reauthenticate user first
-                const credential = EmailAuthProvider.credential(user.email, currentPassword);
-                await reauthenticateWithCredential(user, credential);
-                
-                // Update password
-                await updatePassword(user, newPassword);
-                
-                // Clear form
-                passwordForm.reset();
-                
-                showToast("Kata laluan berjaya diubah!", "success");
-
-            } catch (error) {
-                console.error("Error changing password:", error);
-                
-                if (error.code === 'auth/wrong-password') {
-                    showToast("Kata laluan semasa tidak betul.", "error");
-                } else if (error.code === 'auth/too-many-requests') {
-                    showToast("Terlalu banyak percubaan. Sila cuba lagi kemudian.", "error");
-                } else {
-                    showToast("Gagal mengubah kata laluan.", "error");
-                }
-            } finally {
-                changePasswordBtn.disabled = false;
-                changePasswordBtn.innerHTML = '<i class="ph ph-lock"></i> Tukar Kata Laluan';
-            }
-        });
-
-        // --- 4. CANCEL BUTTON ---
+        // --- 3. CANCEL BUTTON ---
         cancelBtn.addEventListener('click', () => {
             if (hasFormChanges()) {
                 if (confirm("Anda mempunyai perubahan yang belum disimpan. Adakah anda pasti ingin membatalkan?")) {
@@ -1007,12 +1102,12 @@
             }
         });
 
-        // --- 5. AVATAR UPLOAD (Placeholder) ---
+        // --- 4. AVATAR UPLOAD (Placeholder) ---
         avatarUploadBtnEl.addEventListener('click', () => {
             showToast("Fungsi muat naik gambar akan datang.", "info");
         });
 
-        // --- 6. LOGOUT ---
+        // --- 5. LOGOUT ---
         document.getElementById('logoutBtn').addEventListener('click', () => {
             if (hasFormChanges()) {
                 if (confirm("Anda mempunyai perubahan yang belum disimpan. Adakah anda pasti ingin log keluar?")) {
@@ -1039,7 +1134,7 @@
             }
         });
 
-        // --- 7. CONFIRM BEFORE LEAVING PAGE WITH CHANGES ---
+        // --- 6. CONFIRM BEFORE LEAVING PAGE WITH CHANGES ---
         window.addEventListener('beforeunload', (e) => {
             if (hasFormChanges()) {
                 e.preventDefault();
@@ -1053,6 +1148,16 @@
                 navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    showToast('Kemas kini aplikasi tersedia. Sila muat semula halaman.', 'info');
+                                }
+                            });
+                        });
                     })
                     .catch(error => {
                         console.log('ServiceWorker registration failed: ', error);

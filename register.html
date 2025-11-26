@@ -26,7 +26,8 @@
     <div class="register-card">
         <div class="header">
             <div class="logo-placeholder">
-                <i class="ph ph-user-plus" style="font-size: 2.5rem;"></i>
+                <!-- GANTIAN IKON DENGAN LOGO -->
+                <img src="https://i.ibb.co/bR6tMhrv/icon-512x512.png" alt="Logo Portal Komuniti" class="header-logo">
             </div>
             <h1>Daftar Ahli Baru</h1>
             <p>Isi maklumat di bawah untuk menyertai persatuan.</p>
@@ -37,27 +38,42 @@
         <form id="registerForm">
             <div class="form-group">
                 <label>Nama Penuh</label>
-                <input type="text" id="fullName" placeholder="Ali bin Abu" required autocomplete="name">
+                <div class="input-with-icon">
+                    <i class="ph ph-user"></i>
+                    <input type="text" id="fullName" placeholder="Ali bin Abu" required autocomplete="name">
+                </div>
             </div>
 
             <div class="form-group">
                 <label>Nombor Telefon</label>
-                <input type="tel" id="phone" placeholder="0123456789" required autocomplete="tel">
+                <div class="input-with-icon">
+                    <i class="ph ph-phone"></i>
+                    <input type="tel" id="phone" placeholder="0123456789" required autocomplete="tel">
                 </div>
+            </div>
 
             <div class="form-group">
                 <label>Alamat Emel</label>
-                <input type="email" id="email" placeholder="nama@contoh.com" required autocomplete="email">
+                <div class="input-with-icon">
+                    <i class="ph ph-envelope"></i>
+                    <input type="email" id="email" placeholder="nama@contoh.com" required autocomplete="email">
+                </div>
             </div>
 
             <div class="form-group">
                 <label>Kata Laluan</label>
-                <input type="password" id="password" placeholder="Minimum 6 aksara" required autocomplete="new-password">
+                <div class="input-with-icon">
+                    <i class="ph ph-lock"></i>
+                    <input type="password" id="password" placeholder="Minimum 6 aksara" required autocomplete="new-password">
+                </div>
             </div>
 
             <div class="form-group">
                 <label>Sahkan Kata Laluan</label>
-                <input type="password" id="confirmPassword" placeholder="Ulang kata laluan" required autocomplete="new-password">
+                <div class="input-with-icon">
+                    <i class="ph ph-lock"></i>
+                    <input type="password" id="confirmPassword" placeholder="Ulang kata laluan" required autocomplete="new-password">
+                </div>
             </div>
 
             <button type="submit" class="btn-primary" id="regBtn">
@@ -211,6 +227,35 @@
         /* Tambah animasi spinner jika tiada dalam register.css */
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+        
+        /* Gaya untuk input dengan ikon */
+        .input-with-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-with-icon i {
+            position: absolute;
+            left: 12px;
+            color: #6b7280;
+            font-size: 1.2rem;
+            z-index: 1;
+        }
+        
+        .input-with-icon input {
+            padding-left: 40px;
+            width: 100%;
+        }
+
+        /* Gaya untuk logo di bahagian header */
+        .header-logo {
+            width: 80px;  /* Saiz lebar logo */
+            height: 80px; /* Saiz tinggi logo */
+            border-radius: 50%; /* Jadikan logo berbentuk bulat */
+            object-fit: cover; /* Pastikan gambar tidak terdistorsi */
+            border: 3px solid #e5e7eb; /* Tambah border kelabu nipis (opsional) */
         }
     </style>
 </body>

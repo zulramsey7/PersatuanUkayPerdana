@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Buat Pengumuman - Portal Komuniti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;      /* Dark Blue */
+            --accent: #2563eb;       /* Bright Blue */
+            --bg-body: #f1f5f9;      /* Light Grey */
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- PWA: Toast Notification Styles --- */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background-color: white;
+            color: var(--text-main);
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+        .toast.success i {
+            color: var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+        .toast.error i {
+            color: var(--danger);
+        }
+        
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 5rem;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+            -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+            transform: translateZ(0);
+            position: relative;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 70%;
+            background-color: var(--accent);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%;
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        /* --- FORM STYLES --- */
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+        }
+
+        .card-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .card-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-header p {
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background-color: #cbd5e1;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* --- PWA: Add overlay for sidebar --- */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                height: 100vh;
+                padding-top: env(safe-area-inset-top, 1.5rem);
+                padding-bottom: env(safe-area-inset-bottom, 5rem);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content { 
+                margin-left: 0; 
+                padding: 1rem;
+                padding-top: 70px;
+                width: 100%; 
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .user-profile {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .toast-container {
+                left: 10px;
+                right: 10px;
+            }
+            
+            .toast {
+                min-width: auto;
+                width: 100%;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PWA: Container for Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- PWA: Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group admin-only" id="adminMenu">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html" class="active"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="notis.html"><i class="ph ph-megaphone"></i> Pengumuman</a></li>
+                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2>Buat Pengumuman Baharu</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Hantar notis dan maklumat penting kepada semua ahli.</p>
+            </div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                </div>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </header>
+
+        <div class="form-container">
+            <div class="card">
+                <div class="card-header">
+                    <h1>Isi Maklumat Pengumuman</h1>
+                    <p>Pastikan maklumat yang diberikan adalah tepat dan jelas.</p>
+                </div>
+
+                <form id="announcementForm">
+                    <div class="form-group">
+                        <label for="title">Tajuk Pengumuman</label>
+                        <input type="text" id="title" placeholder="Contoh: Mesyuarat Agung Tahunan" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="content">Kandungan Penuh</label>
+                        <textarea id="content" placeholder="Tulis kandungan pengumuman anda di sini. Terangkan butiran penting seperti tarikh, masa, dan lokasi." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="isPrimary">
+                            <label for="isPrimary" style="margin-bottom: 0; font-weight: normal;">Tandakan sebagai pengumuman UTAMA</label>
+                        </div>
+                        <small style="color: var(--text-muted); margin-top: 5px; display: block;">Pengumuman utama akan ditonjolkan dengan warna yang berbeza.</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelBtn">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span id="btnText">Terbit Pengumuman</span>
+                            <div class="loading-spinner" id="btnSpinner" style="display: none; margin-left: 8px;"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // DOM Elements
+        const announcementForm = document.getElementById('announcementForm');
+        const titleInput = document.getElementById('title');
+        const contentTextarea = document.getElementById('content');
+        const isPrimaryCheckbox = document.getElementById('isPrimary');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+        const toastContainerEl = document.getElementById('toastContainer');
+        const adminMenuEl = document.getElementById('adminMenu');
+
+        // Show/hide loading overlay
+        const showLoading = () => loadingOverlayEl.classList.add('active');
+        const hideLoading = () => loadingOverlayEl.classList.remove('active');
+
+        // Set loading state for button
+        const setFormLoading = (isLoading) => {
+            if (isLoading) {
+                submitBtn.disabled = true;
+                btnText.textContent = "Menyiarkan...";
+                btnSpinner.style.display = "inline-block";
+            } else {
+                submitBtn.disabled = false;
+                btnText.textContent = "Terbit Pengumuman";
+                btnSpinner.style.display = "none";
+            }
+        };
+
+        // PWA: Fungsi untuk paparkan notifikasi Toast
+        const showToast = (message, type = 'success') => {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+            toast.innerHTML = `<i class="ph ${icon}" style="font-size: 1.5rem;"></i><span>${message}</span>`;
+            toastContainerEl.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toastContainerEl.removeChild(toast), 300);
+            }, 3000);
+        };
+
+        // PWA: Toggle sidebar for mobile
+        const toggleSidebar = () => {
+            sidebarEl.classList.toggle('active');
+            sidebarOverlayEl.classList.toggle('active');
+            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
+        };
+
+        sidebarOverlayEl.addEventListener('click', () => {
+            sidebarEl.classList.remove('active');
+            sidebarOverlayEl.classList.remove('active');
+        });
+
+        sidebarToggleEl.addEventListener('click', toggleSidebar);
+        
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && !sidebarEl.contains(e.target) && !sidebarToggleEl.contains(e.target) && sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        });
+
+        // --- CORE FUNCTION: Create Announcement ---
+        const createAnnouncement = async (e) => {
+            e.preventDefault();
+            
+            const title = titleInput.value.trim();
+            const content = contentTextarea.value.trim();
+            const isPrimary = isPrimaryCheckbox.checked;
+
+            if (!title || !content) {
+                showToast('Sila isi semua medan yang wajib.', 'error');
+                return;
+            }
+
+            setFormLoading(true);
+
+            try {
+                await addDoc(collection(db, "announcements"), {
+                    title: title,
+                    content: content,
+                    isPrimary: isPrimary,
+                    createdAt: serverTimestamp(),
+                    createdBy: auth.currentUser.uid
+                });
+
+                showToast('Pengumuman berjaya diterbitkan!', 'success');
+                announcementForm.reset();
+                
+                // Redirect to dashboard after a short delay
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error("Ralat mencipta pengumuman:", error);
+                showToast('Gagal menerbitkan pengumuman. Sila cuba lagi.', 'error');
+            } finally {
+                // Ensure button is re-enabled even if there's an error
+                setFormLoading(false);
+            }
+        };
+
+        // Fetch user data and check role
+        const fetchUserData = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const name = data.fullName || 'Admin';
+                    userNameEl.textContent = name;
+                    userRankEl.textContent = data.memberRank || 'Pentadbir';
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+
+                    // IMPORTANT: Check if user is admin
+                    if (data.role !== 'admin') {
+                        showToast('Anda tidak mempunyai kebenaran untuk mengakses halaman ini.', 'error');
+                        // Redirect non-admin users away after a short delay to show the toast
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1500);
+                        return; // Stop executing the rest of the function
+                    }
+
+                    // Show admin menu if role is correct
+                    adminMenuEl.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Ralat mengambil data profil:", error);
+                window.location.href = 'index.html'; // Redirect on error
+            }
+        };
+
+        // Event Listeners
+        announcementForm.addEventListener('submit', createAnnouncement);
+        cancelBtn.addEventListener('click', () => window.history.back());
+        logoutBtn.addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                window.location.href = "index.html";
+            }).catch((error) => {
+                console.error("Ralat log keluar:", error);
+                hideLoading();
+            });
+        });
+
+        // Main Auth State Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                fetchUserData(user.uid);
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        // PWA: Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('ServiceWorker registration successful'))
+                    .catch(error => console.log('ServiceWorker registration failed:', error));
+            });
+        }
+    </script>
+</body>
+</html>
