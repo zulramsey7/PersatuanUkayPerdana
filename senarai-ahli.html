@@ -326,6 +326,15 @@
             background: #1d4ed8;
         }
 
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
         .btn-outline {
             background: transparent;
             color: var(--accent);
@@ -461,6 +470,13 @@
             font-size: 0.9rem;
             background-color: white;
         }
+
+        /* Download button styling */
+        .download-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
         
         /* Mobile Responsive */
         @media (max-width: 768px) {
@@ -484,6 +500,10 @@
             }
             
             .welcome-banner h1 { font-size: 1.5rem; }
+            
+            .download-container {
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -596,6 +616,14 @@
                     </div>
                 </div>
 
+                <!-- Download Button -->
+                <div class="download-container" id="downloadContainer" style="display: none;">
+                    <button class="btn btn-success" id="downloadBtn">
+                        <i class="ph ph-download-simple"></i>
+                        Muat Turun Data Ahli
+                    </button>
+                </div>
+
                 <div class="search-filter-container">
                     <div class="search-box">
                         <i class="ph ph-magnifying-glass"></i>
@@ -671,6 +699,8 @@
         const loadingOverlayEl = document.getElementById('loadingOverlay');
         const sidebarToggleEl = document.getElementById('sidebarToggle');
         const sidebarEl = document.getElementById('sidebar');
+        const downloadBtnEl = document.getElementById('downloadBtn');
+        const downloadContainerEl = document.getElementById('downloadContainer');
         
         // Search and Filter Elements
         const searchInputEl = document.getElementById('searchInput');
@@ -809,11 +839,13 @@
                         adminBadgeEl.style.display = 'inline-block';
                         memberInfoBoxEl.style.display = 'none';
                         memberListTitleEl.innerHTML = '<i class="ph ph-users-three"></i> Senarai Semua Ahli';
+                        downloadContainerEl.style.display = 'flex'; // Show download button for admin
                     } else {
                         adminMenuEl.style.display = 'none';
                         adminBadgeEl.style.display = 'none';
                         memberInfoBoxEl.style.display = 'flex';
                         memberListTitleEl.innerHTML = '<i class="ph ph-users-three"></i> Senarai Ahli (Diluluskan)';
+                        downloadContainerEl.style.display = 'none'; // Hide download button for regular members
                     }
                     
                     const name = data.fullName || 'Ahli';
@@ -824,6 +856,7 @@
                     userNameEl.textContent = 'Tetamu';
                     userRankEl.textContent = 'Tidak Berdaftar';
                     memberInfoBoxEl.style.display = 'none';
+                    downloadContainerEl.style.display = 'none';
                 }
             } catch (error) {
                 console.error("Ralat memuatkan profil header:", error);
@@ -879,7 +912,15 @@
                         } else if (data.registered_on && data.registered_on.toDate) {
                             registeredDate = data.registered_on.toDate().toLocaleDateString('ms-MY');
                         }
-                        return { name, rank, status: hasPaidThisMonth ? 'paid' : 'unpaid', statusBadge, registeredDate };
+                        return { 
+                            name, 
+                            rank, 
+                            status: hasPaidThisMonth ? 'paid' : 'unpaid', 
+                            statusBadge, 
+                            registeredDate,
+                            email: data.email || '',
+                            phone: data.phone || ''
+                        };
                     });
                     const members = await Promise.all(memberPromises);
                     filteredMembers = members;
@@ -968,6 +1009,56 @@
             });
         };
         
+        // --- FUNGSI 5: DOWNLOAD DATA AHLI ---
+        const downloadMemberData = () => {
+            try {
+                // Get all filtered members (not just paginated)
+                const searchTerm = searchInputEl.value.toLowerCase();
+                const statusFilter = statusFilterEl.value;
+                const rankFilter = rankFilterEl.value;
+                
+                let filtered = filteredMembers.filter(member => {
+                    const matchesSearch = member.name.toLowerCase().includes(searchTerm);
+                    const matchesStatus = !statusFilter || member.status === statusFilter;
+                    const matchesRank = !rankFilter || member.rank === rankFilter;
+                    return matchesSearch && matchesStatus && matchesRank;
+                });
+                
+                // Create CSV content
+                let csvContent = "Nama,Jawatan/Pangkat,Status Yuran,Tarikh Daftar,Emel,Nombor Telefon\n";
+                
+                filtered.forEach(member => {
+                    const statusText = member.status === 'paid' ? 'Sudah Bayar' : 'Belum Bayar';
+                    const row = [
+                        `"${member.name}"`,
+                        `"${member.rank}"`,
+                        `"${statusText}"`,
+                        `"${member.registeredDate}"`,
+                        `"${member.email}"`,
+                        `"${member.phone}"`
+                    ].join(",");
+                    csvContent += row + "\n";
+                });
+                
+                // Create blob and download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                const currentDate = new Date().toISOString().slice(0, 10);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `senarai_ahli_${currentDate}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast("Data ahli berjaya dimuat turun!", "success");
+            } catch (error) {
+                console.error("Ralat memuat turun data ahli:", error);
+                showToast("Ralat memuat turun data. Sila cuba lagi.", "error");
+            }
+        };
+        
         // --- EVENT LISTENERS ---
         searchInputEl.addEventListener('input', () => { currentPage = 1; applyFiltersAndRender(); });
         statusFilterEl.addEventListener('change', () => { currentPage = 1; applyFiltersAndRender(); });
@@ -978,6 +1069,9 @@
             showLoading();
             signOutUser().then(() => { hideLoading(); window.location.href = "index.html"; }).catch((error) => { hideLoading(); console.error("Ralat log keluar:", error); showToast("Ralat semasa log keluar. Sila cuba lagi.", "error"); });
         });
+        
+        // Download button event listener
+        downloadBtnEl.addEventListener('click', downloadMemberData);
 
         // Auth State Change Listener
         onAuthStateChanged(auth, (user) => {
