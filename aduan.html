@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aduan & Cadangan - Portal Komuniti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;      /* Dark Blue */
+            --accent: #2563eb;       /* Bright Blue */
+            --bg-body: #f1f5f9;      /* Light Grey */
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        /* --- ADMIN ONLY STYLES --- */
+        .admin-only {
+            display: none; /* Sembunyikan menu admin secara default */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .admin-badge {
+            background-color: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            text-transform: uppercase;
+            display: none;
+            vertical-align: middle;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%; /* Ensure full width relative to flex */
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* --- WELCOME BANNER --- */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), #1e293b);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+
+        /* --- COMPLAINT CARDS --- */
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 2rem;
+        }
+
+        .card h3 { 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            font-weight: 700; 
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: var(--bg-card);
+            border: 1px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .action-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-3px);
+        }
+
+        .action-card i {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .action-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Form Styles */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Tables & Lists */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin-bottom: 1rem;
+        }
+        
+        .member-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        
+        .member-table th { 
+            text-align: left; 
+            padding: 12px; 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            border-bottom: 1px solid #e2e8f0; 
+        }
+        
+        .member-table td { 
+            padding: 16px 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 0.95rem; 
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-badge.pending { 
+            background: #fef3c7; 
+            color: #92400e; 
+        }
+        
+        .status-badge.in-progress { 
+            background: #dbeafe; 
+            color: #1e40af; 
+        }
+
+        .status-badge.resolved { 
+            background: #dcfce7; 
+            color: #166534; 
+        }
+
+        .status-badge.rejected { 
+            background: #fee2e2; 
+            color: #991b1b; 
+        }
+
+        .priority-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .priority-badge.high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .priority-badge.medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .priority-badge.low {
+            background: #f0f9ff;
+            color: #0369a1;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #e2e8f0;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-cancel:hover {
+            background: var(--bg-body);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 70px; /* Space for toggle button */
+                width: 100%;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-group.full-width {
+                grid-column: span 1;
+            }
+            
+            .welcome-banner h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group admin-only" id="adminMenu">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="#" class="active"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2 id="pageTitle">Aduan & Cadangan <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Saluran komunikasi untuk maklum balas komuniti.</p>
+            </div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                </div>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div class="welcome-banner">
+                <h1>Aduan & Cadangan</h1>
+                <p style="opacity: 0.9; max-width: 600px;">Bantulah kami meningkatkan komuniti dengan memberikan maklum balas anda.</p>
+                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+                    <i class="ph ph-warning-circle"></i>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="action-card" onclick="openComplaintModal()">
+                    <i class="ph ph-warning"></i>
+                    <h4>Buat Aduan</h4>
+                    <p>Laporkan isu atau masalah dalam komuniti</p>
+                </div>
+                <div class="action-card" onclick="openSuggestionModal()">
+                    <i class="ph ph-lightbulb"></i>
+                    <h4>Beri Cadangan</h4>
+                    <p>Kongsi idea untuk penambahbaikan komuniti</p>
+                </div>
+                <div class="action-card" onclick="showMySubmissions()">
+                    <i class="ph ph-chat-text"></i>
+                    <h4>Aduan Saya</h4>
+                    <p>Semak status aduan dan cadangan anda</p>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="all">Semua</div>
+                <div class="tab" data-tab="complaints">Aduan</div>
+                <div class="tab" data-tab="suggestions">Cadangan</div>
+                <div class="tab admin-only" data-tab="manage" id="manageTab">Urus</div>
+            </div>
+
+            <!-- All Submissions Tab -->
+            <div class="tab-content active" id="all">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-list"></i>
+                        Semua Aduan & Cadangan
+                    </h3>
+                    
+                    <div class="table-responsive">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Jenis</th>
+                                    <th>Tajuk</th>
+                                    <th>Status</th>
+                                    <th>Tarikh</th>
+                                    <th>Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allSubmissionsTable">
+                                <tr><td colspan="6" style="text-align: center;">Memuatkan data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complaints Tab -->
+            <div class="tab-content" id="complaints">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-warning"></i>
+                        Senarai Aduan
+                    </h3>
+                    
+                    <div class="table-responsive">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tajuk</th>
+                                    <th>Kategori</th>
+                                    <th>Keutamaan</th>
+                                    <th>Status</th>
+                                    <th>Tarikh</th>
+                                    <th>Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="complaintsTable">
+                                <tr><td colspan="7" style="text-align: center;">Memuatkan data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions Tab -->
+            <div class="tab-content" id="suggestions">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-lightbulb"></i>
+                        Senarai Cadangan
+                    </h3>
+                    
+                    <div class="table-responsive">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tajuk</th>
+                                    <th>Kategori</th>
+                                    <th>Status</th>
+                                    <th>Tarikh</th>
+                                    <th>Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suggestionsTable">
+                                <tr><td colspan="6" style="text-align: center;">Memuatkan data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Tab (Admin Only) -->
+            <div class="tab-content" id="manage">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-gear"></i>
+                        Urus Aduan & Cadangan
+                    </h3>
+                    
+                    <div class="table-responsive">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Jenis</th>
+                                    <th>Dihantar Oleh</th>
+                                    <th>Tajuk</th>
+                                    <th>Status</th>
+                                    <th>Tarikh</th>
+                                    <th>Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manageTable">
+                                <tr><td colspan="7" style="text-align: center;">Memuatkan data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Complaint/Suggestion Modal -->
+    <div class="modal" id="submissionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Buat Aduan</h3>
+                <button class="modal-close" id="closeModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="submissionForm">
+                <div class="form-group">
+                    <label for="submissionType">Jenis</label>
+                    <select id="submissionType" required>
+                        <option value="">Pilih jenis</option>
+                        <option value="complaint">Aduan</option>
+                        <option value="suggestion">Cadangan</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="submissionCategory">Kategori</label>
+                    <select id="submissionCategory" required>
+                        <option value="">Pilih kategori</option>
+                        <option value="facilities">Kemudahan</option>
+                        <option value="security">Keselamatan</option>
+                        <option value="cleanliness">Kebersihan</option>
+                        <option value="noise">Kebisingan</option>
+                        <option value="parking">Parking</option>
+                        <option value="other">Lain-lain</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="submissionTitle">Tajuk</label>
+                    <input type="text" id="submissionTitle" required placeholder="Tajuk ringkas">
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="submissionDescription">Penerangan</label>
+                    <textarea id="submissionDescription" required placeholder="Terangkan dengan terperinci..."></textarea>
+                </div>
+                
+                <div class="form-group" id="priorityGroup" style="display: none;">
+                    <label for="submissionPriority">Keutamaan</label>
+                    <select id="submissionPriority">
+                        <option value="low">Rendah</option>
+                        <option value="medium">Sederhana</option>
+                        <option value="high">Tinggi</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelSubmission">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-paper-plane-right"></i>
+                        Hantar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Maklumat Aduan/Cadangan</h3>
+                <button class="modal-close" id="closeDetailsModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <div id="detailsContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+            
+            <div class="form-actions" id="detailsActions">
+                <!-- Actions will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Modal (Admin Only) -->
+    <div class="modal" id="responseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Balas Aduan/Cadangan</h3>
+                <button class="modal-close" id="closeResponseModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="responseForm">
+                <div class="form-group">
+                    <label for="responseStatus">Status</label>
+                    <select id="responseStatus" required>
+                        <option value="pending">Menunggu</option>
+                        <option value="in-progress">Dalam Proses</option>
+                        <option value="resolved">Selesai</option>
+                        <option value="rejected">Ditolak</option>
+                    </select>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="responseMessage">Mesej Balasan</label>
+                    <textarea id="responseMessage" required placeholder="Taipkan balasan anda..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelResponse">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-paper-plane-right"></i>
+                        Hantar Balasan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="ph ph-info" id="toastIcon"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, query, getDocs, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ID Elemen DOM
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        
+        // Tab Elements
+        const tabsEl = document.querySelectorAll('.tab');
+        const tabContentsEl = document.querySelectorAll('.tab-content');
+        
+        // Table Elements
+        const allSubmissionsTableEl = document.getElementById('allSubmissionsTable');
+        const complaintsTableEl = document.getElementById('complaintsTable');
+        const suggestionsTableEl = document.getElementById('suggestionsTable');
+        const manageTableEl = document.getElementById('manageTable');
+        
+        // Modal Elements
+        const submissionModalEl = document.getElementById('submissionModal');
+        const detailsModalEl = document.getElementById('detailsModal');
+        const responseModalEl = document.getElementById('responseModal');
+        const submissionFormEl = document.getElementById('submissionForm');
+        const responseFormEl = document.getElementById('responseForm');
+        
+        // Button Elements
+        const closeModalEl = document.getElementById('closeModal');
+        const closeDetailsModalEl = document.getElementById('closeDetailsModal');
+        const closeResponseModalEl = document.getElementById('closeResponseModal');
+        const cancelSubmissionEl = document.getElementById('cancelSubmission');
+        const cancelResponseEl = document.getElementById('cancelResponse');
+        
+        // Form Elements
+        const submissionTypeEl = document.getElementById('submissionType');
+        const priorityGroupEl = document.getElementById('priorityGroup');
+        
+        // Elemen Admin
+        const adminMenuEl = document.getElementById('adminMenu');
+        const adminBadgeEl = document.getElementById('adminBadge');
+        const manageTabEl = document.getElementById('manageTab');
+        
+        // Toast notification elements
+        const toastEl = document.getElementById('toast');
+        const toastMessageEl = document.getElementById('toastMessage');
+        const toastIconEl = document.getElementById('toastIcon');
+
+        // Current user data
+        let currentUser = null;
+        let currentUserData = null;
+        let currentSubmissionId = null;
+
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // Show toast notification
+        const showToast = (message, type = 'info') => {
+            toastMessageEl.textContent = message;
+            
+            // Reset classes
+            toastEl.className = 'toast';
+            
+            // Set appropriate class and icon based on type
+            switch(type) {
+                case 'success':
+                    toastEl.classList.add('success');
+                    toastIconEl.className = 'ph ph-check-circle';
+                    break;
+                case 'error':
+                    toastEl.classList.add('error');
+                    toastIconEl.className = 'ph ph-warning-circle';
+                    break;
+                default:
+                    toastEl.classList.add('info');
+                    toastIconEl.className = 'ph ph-info';
+            }
+            
+            // Show toast
+            toastEl.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        };
+
+        // Toggle sidebar for mobile
+        sidebarToggleEl.addEventListener('click', () => {
+            sidebarEl.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebarEl.contains(e.target) && 
+                !sidebarToggleEl.contains(e.target) && 
+                sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+            }
+        });
+
+        // Format date
+        const formatDate = (date) => {
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(date).toLocaleDateString('ms-MY', options);
+        };
+
+        // Format time
+        const formatTime = (date) => {
+            return new Date(date).toLocaleTimeString('ms-MY', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        };
+
+        // Get category name in Malay
+        const getCategoryName = (category) => {
+            const categories = {
+                'facilities': 'Kemudahan',
+                'security': 'Keselamatan',
+                'cleanliness': 'Kebersihan',
+                'noise': 'Kebisingan',
+                'parking': 'Parking',
+                'other': 'Lain-lain'
+            };
+            return categories[category] || category;
+        };
+
+        // Get status badge HTML
+        const getStatusBadge = (status) => {
+            const statusClasses = {
+                'pending': 'pending',
+                'in-progress': 'in-progress',
+                'resolved': 'resolved',
+                'rejected': 'rejected'
+            };
+            
+            const statusTexts = {
+                'pending': 'Menunggu',
+                'in-progress': 'Dalam Proses',
+                'resolved': 'Selesai',
+                'rejected': 'Ditolak'
+            };
+            
+            return `<span class="status-badge ${statusClasses[status] || 'pending'}">${statusTexts[status] || status}</span>`;
+        };
+
+        // Get priority badge HTML
+        const getPriorityBadge = (priority) => {
+            const priorityClasses = {
+                'low': 'low',
+                'medium': 'medium',
+                'high': 'high'
+            };
+            
+            const priorityTexts = {
+                'low': 'Rendah',
+                'medium': 'Sederhana',
+                'high': 'Tinggi'
+            };
+            
+            return `<span class="priority-badge ${priorityClasses[priority] || 'low'}">${priorityTexts[priority] || priority}</span>`;
+        };
+
+        // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
+        const updateHeaderProfile = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid); 
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    if (data.role === 'admin') {
+                        adminMenuEl.style.display = 'block';
+                        adminBadgeEl.style.display = 'inline-block';
+                        manageTabEl.style.display = 'block';
+                    } else {
+                        adminMenuEl.style.display = 'none';
+                        adminBadgeEl.style.display = 'none';
+                        manageTabEl.style.display = 'none';
+                    }
+                    
+                    const name = data.fullName || 'Ahli';
+                    userNameEl.textContent = name;
+                    userRankEl.textContent = data.memberRank || 'Ahli Biasa';
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+                    
+                    // Store user data
+                    currentUserData = data;
+                } else {
+                    userNameEl.textContent = 'Tetamu';
+                    userRankEl.textContent = 'Tidak Berdaftar';
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan profil header:", error);
+                showToast("Ralat memuatkan profil.", "error");
+            }
+        };
+
+        // --- FUNGSI 2: MUATKAN SEMUA PENYERAHAN ---
+        const fetchAllSubmissions = async () => {
+            try {
+                const q = query(
+                    collection(db, "submissions"),
+                    orderBy("createdAt", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    allSubmissionsTableEl.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tiada aduan atau cadangan.</td></tr>';
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const submission = doc.data();
+                    const submissionId = doc.id;
+                    
+                    // Only show user's own submissions unless admin
+                    if (currentUserData.role !== 'admin' && submission.submittedBy !== currentUser.uid) {
+                        return;
+                    }
+                    
+                    const typeText = submission.type === 'complaint' ? 'Aduan' : 'Cadangan';
+                    const typeIcon = submission.type === 'complaint' ? 'ph-warning' : 'ph-lightbulb';
+                    
+                    htmlContent += `
+                        <tr>
+                            <td>#${submissionId.substring(0, 6).toUpperCase()}</td>
+                            <td><i class="ph ${typeIcon}"></i> ${typeText}</td>
+                            <td>${submission.title}</td>
+                            <td>${getStatusBadge(submission.status)}</td>
+                            <td>${formatDate(submission.createdAt.toDate())}</td>
+                            <td>
+                                <button class="btn btn-outline" onclick="viewSubmissionDetails('${submissionId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                allSubmissionsTableEl.innerHTML = htmlContent || '<tr><td colspan="6" style="text-align: center;">Tiada aduan atau cadangan.</td></tr>';
+                
+            } catch (error) {
+                console.error("Ralat memuatkan semua penyerahan:", error);
+                allSubmissionsTableEl.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Ralat memuatkan data.</td></tr>';
+                showToast("Ralat memuatkan data.", "error");
+            }
+        };
+
+        // --- FUNGSI 3: MUATKAN ADUAN ---
+        const fetchComplaints = async () => {
+            try {
+                const q = query(
+                    collection(db, "submissions"),
+                    where("type", "==", "complaint"),
+                    orderBy("createdAt", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    complaintsTableEl.innerHTML = '<tr><td colspan="7" style="text-align: center;">Tiada aduan.</td></tr>';
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const submission = doc.data();
+                    const submissionId = doc.id;
+                    
+                    // Only show user's own complaints unless admin
+                    if (currentUserData.role !== 'admin' && submission.submittedBy !== currentUser.uid) {
+                        return;
+                    }
+                    
+                    htmlContent += `
+                        <tr>
+                            <td>#${submissionId.substring(0, 6).toUpperCase()}</td>
+                            <td>${submission.title}</td>
+                            <td>${getCategoryName(submission.category)}</td>
+                            <td>${getPriorityBadge(submission.priority || 'low')}</td>
+                            <td>${getStatusBadge(submission.status)}</td>
+                            <td>${formatDate(submission.createdAt.toDate())}</td>
+                            <td>
+                                <button class="btn btn-outline" onclick="viewSubmissionDetails('${submissionId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                complaintsTableEl.innerHTML = htmlContent || '<tr><td colspan="7" style="text-align: center;">Tiada aduan.</td></tr>';
+                
+            } catch (error) {
+                console.error("Ralat memuatkan aduan:", error);
+                complaintsTableEl.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Ralat memuatkan data.</td></tr>';
+                showToast("Ralat memuatkan data.", "error");
+            }
+        };
+
+        // --- FUNGSI 4: MUATKAN CADANGAN ---
+        const fetchSuggestions = async () => {
+            try {
+                const q = query(
+                    collection(db, "submissions"),
+                    where("type", "==", "suggestion"),
+                    orderBy("createdAt", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    suggestionsTableEl.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tiada cadangan.</td></tr>';
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const submission = doc.data();
+                    const submissionId = doc.id;
+                    
+                    // Only show user's own suggestions unless admin
+                    if (currentUserData.role !== 'admin' && submission.submittedBy !== currentUser.uid) {
+                        return;
+                    }
+                    
+                    htmlContent += `
+                        <tr>
+                            <td>#${submissionId.substring(0, 6).toUpperCase()}</td>
+                            <td>${submission.title}</td>
+                            <td>${getCategoryName(submission.category)}</td>
+                            <td>${getStatusBadge(submission.status)}</td>
+                            <td>${formatDate(submission.createdAt.toDate())}</td>
+                            <td>
+                                <button class="btn btn-outline" onclick="viewSubmissionDetails('${submissionId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                suggestionsTableEl.innerHTML = htmlContent || '<tr><td colspan="6" style="text-align: center;">Tiada cadangan.</td></tr>';
+                
+            } catch (error) {
+                console.error("Ralat memuatkan cadangan:", error);
+                suggestionsTableEl.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Ralat memuatkan data.</td></tr>';
+                showToast("Ralat memuatkan data.", "error");
+            }
+        };
+
+        // --- FUNGSI 5: MUATKAN DATA PENGURUSAN (ADMIN) ---
+        const fetchManageData = async () => {
+            try {
+                const q = query(
+                    collection(db, "submissions"),
+                    orderBy("createdAt", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    manageTableEl.innerHTML = '<tr><td colspan="7" style="text-align: center;">Tiada data untuk diuruskan.</td></tr>';
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const submission = doc.data();
+                    const submissionId = doc.id;
+                    
+                    const typeText = submission.type === 'complaint' ? 'Aduan' : 'Cadangan';
+                    const typeIcon = submission.type === 'complaint' ? 'ph-warning' : 'ph-lightbulb';
+                    
+                    htmlContent += `
+                        <tr>
+                            <td>#${submissionId.substring(0, 6).toUpperCase()}</td>
+                            <td><i class="ph ${typeIcon}"></i> ${typeText}</td>
+                            <td>${submission.submitterName || 'Tidak Diketahui'}</td>
+                            <td>${submission.title}</td>
+                            <td>${getStatusBadge(submission.status)}</td>
+                            <td>${formatDate(submission.createdAt.toDate())}</td>
+                            <td>
+                                <button class="btn btn-outline" onclick="viewSubmissionDetails('${submissionId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.25rem;">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                                <button class="btn btn-primary" onclick="openResponseModal('${submissionId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                    <i class="ph ph-arrow-reply"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                manageTableEl.innerHTML = htmlContent || '<tr><td colspan="7" style="text-align: center;">Tiada data untuk diuruskan.</td></tr>';
+                
+            } catch (error) {
+                console.error("Ralat memuatkan data pengurusan:", error);
+                manageTableEl.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Ralat memuatkan data.</td></tr>';
+                showToast("Ralat memuatkan data.", "error");
+            }
+        };
+
+        // --- FUNGSI 6: BUKA MODAL PENYERAHAN ---
+        window.openComplaintModal = () => {
+            document.getElementById('modalTitle').textContent = 'Buat Aduan';
+            submissionTypeEl.value = 'complaint';
+            priorityGroupEl.style.display = 'block';
+            submissionFormEl.reset();
+            submissionModalEl.classList.add('active');
+        };
+
+        window.openSuggestionModal = () => {
+            document.getElementById('modalTitle').textContent = 'Beri Cadangan';
+            submissionTypeEl.value = 'suggestion';
+            priorityGroupEl.style.display = 'none';
+            submissionFormEl.reset();
+            submissionModalEl.classList.add('active');
+        };
+
+        // --- FUNGSI 7: HANTAR PENYERAHAN ---
+        const submitSubmission = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const type = submissionTypeEl.value;
+                const category = document.getElementById('submissionCategory').value;
+                const title = document.getElementById('submissionTitle').value.trim();
+                const description = document.getElementById('submissionDescription').value.trim();
+                const priority = document.getElementById('submissionPriority').value;
+                
+                // Create submission data
+                const submissionData = {
+                    type: type,
+                    category: category,
+                    title: title,
+                    description: description,
+                    status: 'pending',
+                    submittedBy: currentUser.uid,
+                    submitterName: currentUserData.fullName,
+                    submitterEmail: currentUser.email,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+                
+                // Add priority for complaints
+                if (type === 'complaint') {
+                    submissionData.priority = priority;
+                }
+                
+                // Add to Firestore
+                await addDoc(collection(db, "submissions"), submissionData);
+                
+                // Close modal and reset form
+                submissionModalEl.classList.remove('active');
+                submissionFormEl.reset();
+                
+                // Refresh data
+                await fetchAllSubmissions();
+                
+                hideLoading();
+                showToast(`${type === 'complaint' ? 'Aduan' : 'Cadangan'} berjaya dihantar!`, "success");
+                
+            } catch (error) {
+                console.error("Ralat menghantar penyerahan:", error);
+                hideLoading();
+                showToast("Ralat menghantar. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- FUNGSI 8: LIHAT MAKLUMAT PENYERAHAN ---
+        window.viewSubmissionDetails = async (submissionId) => {
+            try {
+                showLoading();
+                
+                const docRef = doc(db, "submissions", submissionId);
+                const docSnap = await getDoc(docRef);
+                
+                if (!docSnap.exists()) {
+                    showToast("Aduan/Cadangan tidak dijumpai.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                const submission = docSnap.data();
+                
+                const typeText = submission.type === 'complaint' ? 'Aduan' : 'Cadangan';
+                const typeIcon = submission.type === 'complaint' ? 'ph-warning' : 'ph-lightbulb';
+                
+                let detailsHTML = `
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">ID</p>
+                        <p style="font-weight: 600;">#${submissionId.substring(0, 6).toUpperCase()}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Jenis</p>
+                        <p style="font-weight: 600;"><i class="ph ${typeIcon}"></i> ${typeText}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Kategori</p>
+                        <p style="font-weight: 600;">${getCategoryName(submission.category)}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tajuk</p>
+                        <p style="font-weight: 600;">${submission.title}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Penerangan</p>
+                        <p style="line-height: 1.6;">${submission.description}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Status</p>
+                        <p>${getStatusBadge(submission.status)}</p>
+                    </div>
+                `;
+                
+                // Add priority for complaints
+                if (submission.type === 'complaint' && submission.priority) {
+                    detailsHTML += `
+                        <div style="margin-bottom: 1.5rem;">
+                            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Keutamaan</p>
+                            <p>${getPriorityBadge(submission.priority)}</p>
+                        </div>
+                    `;
+                }
+                
+                // Add submission info
+                detailsHTML += `
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Dihantar Oleh</p>
+                        <p style="font-weight: 600;">${submission.submitterName}</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">${submission.submitterEmail}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tarikh & Masa</p>
+                        <p style="font-weight: 600;">${formatDate(submission.createdAt.toDate())} ${formatTime(submission.createdAt.toDate())}</p>
+                    </div>
+                `;
+                
+                // Add response if exists
+                if (submission.response) {
+                    detailsHTML += `
+                        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Balasan</p>
+                            <p style="line-height: 1.6; margin-bottom: 0.5rem;">${submission.response.message}</p>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Dibalas pada: ${formatDate(submission.response.respondedAt.toDate())}</p>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('detailsContent').innerHTML = detailsHTML;
+                
+                // Set actions based on user role
+                let actionsHTML = '';
+                
+                if (currentUserData.role === 'admin') {
+                    actionsHTML = `
+                        <button type="button" class="btn btn-primary" onclick="openResponseModal('${submissionId}')">
+                            <i class="ph ph-arrow-reply"></i>
+                            Beri Balasan
+                        </button>
+                    `;
+                }
+                
+                actionsHTML += `
+                    <button type="button" class="btn-cancel" onclick="closeDetailsModal()">
+                        Tutup
+                    </button>
+                `;
+                
+                document.getElementById('detailsActions').innerHTML = actionsHTML;
+                
+                hideLoading();
+                detailsModalEl.classList.add('active');
+                
+            } catch (error) {
+                console.error("Ralat memuatkan maklumat:", error);
+                hideLoading();
+                showToast("Ralat memuatkan maklumat.", "error");
+            }
+        };
+
+        // --- FUNGSI 9: BUKA MODAL BALASAN ---
+        window.openResponseModal = (submissionId) => {
+            currentSubmissionId = submissionId;
+            detailsModalEl.classList.remove('active');
+            responseFormEl.reset();
+            responseModalEl.classList.add('active');
+        };
+
+        // --- FUNGSI 10: HANTAR BALASAN ---
+        const submitResponse = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const status = document.getElementById('responseStatus').value;
+                const message = document.getElementById('responseMessage').value.trim();
+                
+                // Update submission
+                const docRef = doc(db, "submissions", currentSubmissionId);
+                await updateDoc(docRef, {
+                    status: status,
+                    response: {
+                        message: message,
+                        respondedBy: currentUser.uid,
+                        responderName: currentUserData.fullName,
+                        respondedAt: serverTimestamp()
+                    },
+                    updatedAt: serverTimestamp()
+                });
+                
+                // Close modal and reset form
+                responseModalEl.classList.remove('active');
+                responseFormEl.reset();
+                
+                // Refresh data
+                await fetchManageData();
+                
+                hideLoading();
+                showToast("Balasan berjaya dihantar!", "success");
+                
+            } catch (error) {
+                console.error("Ralat menghantar balasan:", error);
+                hideLoading();
+                showToast("Ralat menghantar balasan. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- FUNGSI 11: PAPARKAN ADUAN PENGGUNA ---
+        window.showMySubmissions = () => {
+            // Switch to "All" tab and filter to user's submissions
+            document.querySelector('[data-tab="all"]').click();
+        };
+
+        // --- EVENT LISTENERS ---
+        
+        // Tab switching
+        tabsEl.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and contents
+                tabsEl.forEach(t => t.classList.remove('active'));
+                tabContentsEl.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                
+                // Load data for active tab
+                if (tabId === 'all') {
+                    fetchAllSubmissions();
+                } else if (tabId === 'complaints') {
+                    fetchComplaints();
+                } else if (tabId === 'suggestions') {
+                    fetchSuggestions();
+                } else if (tabId === 'manage') {
+                    fetchManageData();
+                }
+            });
+        });
+        
+        // Submission type change
+        submissionTypeEl.addEventListener('change', (e) => {
+            if (e.target.value === 'complaint') {
+                priorityGroupEl.style.display = 'block';
+                document.getElementById('modalTitle').textContent = 'Buat Aduan';
+            } else {
+                priorityGroupEl.style.display = 'none';
+                document.getElementById('modalTitle').textContent = 'Beri Cadangan';
+            }
+        });
+        
+        // Modal event listeners
+        closeModalEl.addEventListener('click', () => {
+            submissionModalEl.classList.remove('active');
+        });
+        
+        closeDetailsModalEl.addEventListener('click', () => {
+            detailsModalEl.classList.remove('active');
+        });
+        
+        closeResponseModalEl.addEventListener('click', () => {
+            responseModalEl.classList.remove('active');
+        });
+        
+        cancelSubmissionEl.addEventListener('click', () => {
+            submissionModalEl.classList.remove('active');
+        });
+        
+        cancelResponseEl.addEventListener('click', () => {
+            responseModalEl.classList.remove('active');
+        });
+        
+        // Close modals when clicking outside
+        submissionModalEl.addEventListener('click', (e) => {
+            if (e.target === submissionModalEl) {
+                submissionModalEl.classList.remove('active');
+            }
+        });
+        
+        detailsModalEl.addEventListener('click', (e) => {
+            if (e.target === detailsModalEl) {
+                detailsModalEl.classList.remove('active');
+            }
+        });
+        
+        responseModalEl.addEventListener('click', (e) => {
+            if (e.target === responseModalEl) {
+                responseModalEl.classList.remove('active');
+            }
+        });
+        
+        // Form submissions
+        submissionFormEl.addEventListener('submit', submitSubmission);
+        responseFormEl.addEventListener('submit', submitResponse);
+
+        // Event listener untuk Log Keluar
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                showToast("Anda telah berjaya log keluar.", "success");
+            }).catch((error) => {
+                hideLoading();
+                console.error("Ralat log keluar:", error);
+                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+            });
+        });
+
+        // Auth State Change Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Pengguna log masuk
+                currentUser = user;
+                showLoading();
+                
+                // Load all data in parallel
+                Promise.all([
+                    updateHeaderProfile(user.uid),
+                    fetchAllSubmissions()
+                ]).then(() => {
+                    hideLoading();
+                }).catch((error) => {
+                    console.error("Ralat memuatkan data:", error);
+                    hideLoading();
+                    showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
+                });
+            } else {
+                // Pengguna log keluar, redirect ke halaman log masuk
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktiviti - Portal Komuniti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;      /* Dark Blue */
+            --accent: #2563eb;       /* Bright Blue */
+            --bg-body: #f1f5f9;      /* Light Grey */
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        /* --- ADMIN ONLY STYLES --- */
+        .admin-only {
+            display: none; /* Sembunyikan menu admin secara default */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .admin-badge {
+            background-color: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            text-transform: uppercase;
+            display: none;
+            vertical-align: middle;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%; /* Ensure full width relative to flex */
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* --- WELCOME BANNER --- */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), #1e293b);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+
+        /* --- EVENT CARDS --- */
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 2rem;
+        }
+
+        .card h3 { 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            font-weight: 700; 
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .event-card {
+            display: flex;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            border: 1px solid #f1f5f9;
+            transition: var(--transition);
+        }
+
+        .event-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            transform: translateY(-3px);
+        }
+
+        .event-date {
+            background: var(--accent);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem 1rem;
+            min-width: 100px;
+        }
+
+        .event-date .day {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .event-date .month {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        .event-details {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .event-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .event-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .event-description {
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* Tables & Lists */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin-bottom: 1rem;
+        }
+        
+        .member-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        
+        .member-table th { 
+            text-align: left; 
+            padding: 12px; 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            border-bottom: 1px solid #e2e8f0; 
+        }
+        
+        .member-table td { 
+            padding: 16px 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 0.95rem; 
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-badge.active { 
+            background: #dcfce7; 
+            color: #166534; 
+        }
+        
+        .status-badge.inactive { 
+            background: #fee2e2; 
+            color: #991b1b; 
+        }
+
+        .status-active {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-due {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Event Registration Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #e2e8f0;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-cancel:hover {
+            background: var(--bg-body);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 70px; /* Space for toggle button */
+                width: 100%;
+            }
+            
+            .event-card {
+                flex-direction: column;
+            }
+            
+            .event-date {
+                min-width: auto;
+                padding: 1rem;
+                flex-direction: row;
+                gap: 1rem;
+            }
+            
+            .welcome-banner h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group admin-only" id="adminMenu">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="#" class="active"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2 id="pageTitle">Aktiviti <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Jadual aktiviti dan acara komuniti.</p>
+            </div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                </div>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div class="welcome-banner">
+                <h1>Aktiviti Komuniti</h1>
+                <p style="opacity: 0.9; max-width: 600px;"> sertai acara dan aktiviti yang dianjurkan oleh komuniti untuk mengeratkan hubungan jiran.</p>
+                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+                    <i class="ph ph-calendar-check"></i>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="upcoming">Acara Akan Datang</div>
+                <div class="tab" data-tab="past">Acara Lepas</div>
+                <div class="tab admin-only" data-tab="manage" id="manageTab">Urus Acara</div>
+            </div>
+
+            <!-- Upcoming Events Tab -->
+            <div class="tab-content active" id="upcoming">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-calendar-star"></i>
+                        Acara Akan Datang
+                    </h3>
+                    
+                    <div id="upcomingEventsList">
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="ph ph-calendar-x" style="font-size: 3rem; color: #cbd5e1;"></i>
+                            <p style="color: #64748b; margin-top: 1rem;">Memuatkan acara akan datang...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Past Events Tab -->
+            <div class="tab-content" id="past">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-clock-counter-clockwise"></i>
+                        Sejarah Acara
+                    </h3>
+                    
+                    <div class="table-responsive">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Acara</th>
+                                    <th>Tarikh</th>
+                                    <th>Status</th>
+                                    <th>Kehadiran Anda</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pastEventsTable">
+                                <tr><td colspan="4" style="text-align: center;">Memuatkan sejarah acara...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Events Tab (Admin Only) -->
+            <div class="tab-content" id="manage">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                            <i class="ph ph-calendar-plus"></i>
+                            Urus Acara
+                        </h3>
+                        <button class="btn btn-primary" id="createEventBtn">
+                            <i class="ph ph-plus"></i>
+                            Cipta Acara Baharu
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Acara</th>
+                                    <th>Tarikh</th>
+                                    <th>Status</th>
+                                    <th>Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manageEventsTable">
+                                <tr><td colspan="4" style="text-align: center;">Memuatkan senarai acara...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Event Registration Modal -->
+    <div class="modal" id="registrationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Pendaftaran Acara</h3>
+                <button class="modal-close" id="closeRegistrationModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="registrationForm">
+                <div class="form-group">
+                    <label for="registrationName">Nama Penuh</label>
+                    <input type="text" id="registrationName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registrationPhone">Nombor Telefon</label>
+                    <input type="tel" id="registrationPhone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registrationNotes">Nota (Opsional)</label>
+                    <textarea id="registrationNotes" placeholder="Sebarang permintaan atau pertanyaan..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelRegistration">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-check"></i>
+                        Hantar Pendaftaran
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create/Edit Event Modal (Admin Only) -->
+    <div class="modal" id="eventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="eventModalTitle">Cipta Acara Baharu</h3>
+                <button class="modal-close" id="closeEventModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="eventForm">
+                <div class="form-group">
+                    <label for="eventTitle">Nama Acara</label>
+                    <input type="text" id="eventTitle" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDate">Tarikh</label>
+                    <input type="date" id="eventDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventTime">Masa</label>
+                    <input type="time" id="eventTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventLocation">Lokasi</label>
+                    <input type="text" id="eventLocation" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDescription">Penerangan</label>
+                    <textarea id="eventDescription" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventCapacity">Kapasiti Peserta</label>
+                    <input type="number" id="eventCapacity" min="1" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelEvent">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-check"></i>
+                        Simpan Acara
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="ph ph-info" id="toastIcon"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, query, getDocs, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ID Elemen DOM
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        
+        // Tab Elements
+        const tabsEl = document.querySelectorAll('.tab');
+        const tabContentsEl = document.querySelectorAll('.tab-content');
+        
+        // Event List Elements
+        const upcomingEventsListEl = document.getElementById('upcomingEventsList');
+        const pastEventsTableEl = document.getElementById('pastEventsTable');
+        const manageEventsTableEl = document.getElementById('manageEventsTable');
+        
+        // Modal Elements
+        const registrationModalEl = document.getElementById('registrationModal');
+        const eventModalEl = document.getElementById('eventModal');
+        const registrationFormEl = document.getElementById('registrationForm');
+        const eventFormEl = document.getElementById('eventForm');
+        
+        // Button Elements
+        const createEventBtnEl = document.getElementById('createEventBtn');
+        const closeRegistrationModalEl = document.getElementById('closeRegistrationModal');
+        const closeEventModalEl = document.getElementById('closeEventModal');
+        const cancelRegistrationEl = document.getElementById('cancelRegistration');
+        const cancelEventEl = document.getElementById('cancelEvent');
+        
+        // Elemen Admin
+        const adminMenuEl = document.getElementById('adminMenu');
+        const adminBadgeEl = document.getElementById('adminBadge');
+        const manageTabEl = document.getElementById('manageTab');
+        
+        // Toast notification elements
+        const toastEl = document.getElementById('toast');
+        const toastMessageEl = document.getElementById('toastMessage');
+        const toastIconEl = document.getElementById('toastIcon');
+
+        // Current user data
+        let currentUser = null;
+        let currentUserData = null;
+        let currentEventId = null;
+        let isEditMode = false;
+
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // Show toast notification
+        const showToast = (message, type = 'info') => {
+            toastMessageEl.textContent = message;
+            
+            // Reset classes
+            toastEl.className = 'toast';
+            
+            // Set appropriate class and icon based on type
+            switch(type) {
+                case 'success':
+                    toastEl.classList.add('success');
+                    toastIconEl.className = 'ph ph-check-circle';
+                    break;
+                case 'error':
+                    toastEl.classList.add('error');
+                    toastIconEl.className = 'ph ph-warning-circle';
+                    break;
+                default:
+                    toastEl.classList.add('info');
+                    toastIconEl.className = 'ph ph-info';
+            }
+            
+            // Show toast
+            toastEl.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        };
+
+        // Toggle sidebar for mobile
+        sidebarToggleEl.addEventListener('click', () => {
+            sidebarEl.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebarEl.contains(e.target) && 
+                !sidebarToggleEl.contains(e.target) && 
+                sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+            }
+        });
+
+        // Format date
+        const formatDate = (date) => {
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(date).toLocaleDateString('ms-MY', options);
+        };
+
+        // Format time
+        const formatTime = (time) => {
+            const [hours, minutes] = time.split(':');
+            const hour = parseInt(hours, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const formattedHour = hour % 12 || 12;
+            return `${formattedHour}:${minutes} ${ampm}`;
+        };
+
+        // Get month name
+        const getMonthName = (monthNumber) => {
+            const months = [
+                'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
+                'Jul', 'Ogos', 'Sep', 'Okt', 'Nov', 'Dis'
+            ];
+            return months[parseInt(monthNumber) - 1] || '';
+        };
+
+        // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
+        const updateHeaderProfile = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid); 
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    if (data.role === 'admin') {
+                        adminMenuEl.style.display = 'block';
+                        adminBadgeEl.style.display = 'inline-block';
+                        manageTabEl.style.display = 'block';
+                    } else {
+                        adminMenuEl.style.display = 'none';
+                        adminBadgeEl.style.display = 'none';
+                        manageTabEl.style.display = 'none';
+                    }
+                    
+                    const name = data.fullName || 'Ahli';
+                    userNameEl.textContent = name;
+                    userRankEl.textContent = data.memberRank || 'Ahli Biasa';
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+                    
+                    // Store user data
+                    currentUserData = data;
+                } else {
+                    userNameEl.textContent = 'Tetamu';
+                    userRankEl.textContent = 'Tidak Berdaftar';
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan profil header:", error);
+                showToast("Ralat memuatkan profil.", "error");
+            }
+        };
+
+        // --- FUNGSI 2: MUATKAN ACARA AKAN DATANG ---
+        const fetchUpcomingEvents = async () => {
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const q = query(
+                    collection(db, "events"),
+                    where("date", ">=", today),
+                    orderBy("date", "asc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    upcomingEventsListEl.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="ph ph-calendar-x" style="font-size: 3rem; color: #cbd5e1;"></i>
+                            <p style="color: #64748b; margin-top: 1rem;">Tiada acara akan datang pada masa ini.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const event = doc.data();
+                    const eventId = doc.id;
+                    
+                    // Format date
+                    const eventDate = event.date.toDate();
+                    const day = eventDate.getDate();
+                    const month = getMonthName(eventDate.getMonth() + 1);
+                    const year = eventDate.getFullYear();
+                    const formattedDate = formatDate(event.date.toDate());
+                    
+                    // Check if user is registered
+                    const isRegistered = event.attendees && event.attendees.includes(currentUser.uid);
+                    
+                    htmlContent += `
+                        <div class="event-card">
+                            <div class="event-date">
+                                <div class="day">${day}</div>
+                                <div class="month">${month}</div>
+                            </div>
+                            <div class="event-details">
+                                <h4 class="event-title">${event.title}</h4>
+                                <div class="event-meta">
+                                    <div class="event-meta-item">
+                                        <i class="ph ph-calendar"></i>
+                                        <span>${formattedDate}</span>
+                                    </div>
+                                    <div class="event-meta-item">
+                                        <i class="ph ph-clock"></i>
+                                        <span>${formatTime(event.time)}</span>
+                                    </div>
+                                    <div class="event-meta-item">
+                                        <i class="ph ph-map-pin"></i>
+                                        <span>${event.location}</span>
+                                    </div>
+                                </div>
+                                <p class="event-description">${event.description}</p>
+                                <div class="event-actions">
+                                    ${isRegistered 
+                                        ? `<button class="btn btn-success" disabled>
+                                            <i class="ph ph-check-circle"></i>
+                                            Sudah Berdaftar
+                                        </button>`
+                                        : `<button class="btn btn-primary" onclick="openRegistrationModal('${eventId}')">
+                                            <i class="ph ph-user-plus"></i>
+                                            Daftar Sekarang
+                                        </button>`
+                                    }
+                                    <button class="btn btn-outline" onclick="viewEventDetails('${eventId}')">
+                                        <i class="ph ph-info"></i>
+                                        Maklumat
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                upcomingEventsListEl.innerHTML = htmlContent;
+                
+            } catch (error) {
+                console.error("Ralat memuatkan acara akan datang:", error);
+                upcomingEventsListEl.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="ph ph-warning" style="font-size: 3rem; color: #f87171;"></i>
+                        <p style="color: #ef4444; margin-top: 1rem;">Ralat memuatkan acara akan datang.</p>
+                    </div>
+                `;
+                showToast("Ralat memuatkan acara akan datang.", "error");
+            }
+        };
+
+        // --- FUNGSI 3: MUATKAN SEJARAH ACARA ---
+        const fetchPastEvents = async () => {
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const q = query(
+                    collection(db, "events"),
+                    where("date", "<", today),
+                    orderBy("date", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    pastEventsTableEl.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tiada acara lepas.</td></tr>';
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const event = doc.data();
+                    
+                    // Format date
+                    const formattedDate = formatDate(event.date.toDate());
+                    
+                    // Check if user attended
+                    const attended = event.attendees && event.attendees.includes(currentUser.uid);
+                    
+                    htmlContent += `
+                        <tr>
+                            <td>${event.title}</td>
+                            <td>${formattedDate}</td>
+                            <td><span class="status-active">Selesai</span></td>
+                            <td>${attended ? 'Ya' : 'Tidak'}</td>
+                        </tr>
+                    `;
+                });
+                
+                pastEventsTableEl.innerHTML = htmlContent;
+                
+            } catch (error) {
+                console.error("Ralat memuatkan sejarah acara:", error);
+                pastEventsTableEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Ralat memuatkan sejarah acara.</td></tr>';
+                showToast("Ralat memuatkan sejarah acara.", "error");
+            }
+        };
+
+        // --- FUNGSI 4: MUATKAN SENARAI ACARA (UNTUK PENGURUSAN) ---
+        const fetchManageEvents = async () => {
+            try {
+                const q = query(
+                    collection(db, "events"),
+                    orderBy("date", "asc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    manageEventsTableEl.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tiada acara dijumpai.</td></tr>';
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const event = doc.data();
+                    const eventId = doc.id;
+                    
+                    // Format date
+                    const formattedDate = formatDate(event.date.toDate());
+                    
+                    // Check if event is in the past
+                    const isPast = event.date.toDate() < new Date();
+                    
+                    htmlContent += `
+                        <tr>
+                            <td>${event.title}</td>
+                            <td>${formattedDate}</td>
+                            <td>${isPast ? '<span class="status-active">Selesai</span>' : '<span class="status-due">Akan Datang</span>'}</td>
+                            <td>
+                                <button class="btn btn-outline" onclick="editEvent('${eventId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                    <i class="ph ph-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline" onclick="deleteEvent('${eventId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #fee2e2; color: #991b1b; border-color: #fca5a5;">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                manageEventsTableEl.innerHTML = htmlContent;
+                
+            } catch (error) {
+                console.error("Ralat memuatkan senarai acara:", error);
+                manageEventsTableEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Ralat memuatkan senarai acara.</td></tr>';
+                showToast("Ralat memuatkan senarai acara.", "error");
+            }
+        };
+
+        // --- FUNGSI 5: BUKA MODAL PENDAFTARAN ---
+        window.openRegistrationModal = (eventId) => {
+            currentEventId = eventId;
+            
+            // Pre-fill form with user data
+            document.getElementById('registrationName').value = currentUserData.fullName || '';
+            document.getElementById('registrationPhone').value = currentUserData.phone || '';
+            document.getElementById('registrationNotes').value = '';
+            
+            registrationModalEl.classList.add('active');
+        };
+
+        // --- FUNGSI 6: HANTAR PENDAFTARAN ACARA ---
+        const submitRegistration = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const name = document.getElementById('registrationName').value.trim();
+                const phone = document.getElementById('registrationPhone').value.trim();
+                const notes = document.getElementById('registrationNotes').value.trim();
+                
+                // Get event
+                const eventDoc = doc(db, "events", currentEventId);
+                const eventSnap = await getDoc(eventDoc);
+                
+                if (!eventSnap.exists()) {
+                    showToast("Acara tidak dijumpai.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                const eventData = eventSnap.data();
+                
+                // Check if event is full
+                if (eventData.capacity && eventData.attendees && eventData.attendees.length >= eventData.capacity) {
+                    showToast("Acara sudah penuh.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                // Update event attendees
+                const attendees = eventData.attendees || [];
+                if (!attendees.includes(currentUser.uid)) {
+                    attendees.push(currentUser.uid);
+                }
+                
+                await updateDoc(eventDoc, {
+                    attendees: attendees,
+                    updatedAt: serverTimestamp()
+                });
+                
+                // Add registration record
+                await addDoc(collection(db, "users", currentUser.uid, "eventRegistrations"), {
+                    eventId: currentEventId,
+                    eventTitle: eventData.title,
+                    eventDate: eventData.date,
+                    name: name,
+                    phone: phone,
+                    notes: notes,
+                    registrationDate: serverTimestamp()
+                });
+                
+                // Close modal and reset form
+                registrationModalEl.classList.remove('active');
+                registrationFormEl.reset();
+                
+                // Refresh upcoming events
+                await fetchUpcomingEvents();
+                
+                hideLoading();
+                showToast("Pendaftaran berjaya!", "success");
+                
+            } catch (error) {
+                console.error("Ralat menghantar pendaftaran:", error);
+                hideLoading();
+                showToast("Ralat menghantar pendaftaran. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- FUNGSI 7: LIHAT MAKLUMAT ACARA ---
+        window.viewEventDetails = (eventId) => {
+            // This would typically open a modal with event details
+            // For now, we'll just show a toast
+            showToast("Maklumat acara akan dipaparkan di sini.", "info");
+        };
+
+        // --- FUNGSI 8: CIPTA ACARA BAHARU ---
+        const createEvent = () => {
+            isEditMode = false;
+            currentEventId = null;
+            
+            document.getElementById('eventModalTitle').textContent = 'Cipta Acara Baharu';
+            eventFormEl.reset();
+            
+            // Set default date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('eventDate').value = tomorrow.toISOString().split('T')[0];
+            
+            eventModalEl.classList.add('active');
+        };
+
+        // --- FUNGSI 9: EDIT ACARA ---
+        window.editEvent = async (eventId) => {
+            try {
+                showLoading();
+                
+                isEditMode = true;
+                currentEventId = eventId;
+                
+                document.getElementById('eventModalTitle').textContent = 'Edit Acara';
+                
+                // Get event data
+                const eventDoc = doc(db, "events", eventId);
+                const eventSnap = await getDoc(eventDoc);
+                
+                if (!eventSnap.exists()) {
+                    showToast("Acara tidak dijumpai.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                const eventData = eventSnap.data();
+                
+                // Fill form with event data
+                document.getElementById('eventTitle').value = eventData.title || '';
+                document.getElementById('eventDate').value = eventData.date.toDate().toISOString().split('T')[0] || '';
+                document.getElementById('eventTime').value = eventData.time || '';
+                document.getElementById('eventLocation').value = eventData.location || '';
+                document.getElementById('eventDescription').value = eventData.description || '';
+                document.getElementById('eventCapacity').value = eventData.capacity || '';
+                
+                hideLoading();
+                eventModalEl.classList.add('active');
+                
+            } catch (error) {
+                console.error("Ralat memuatkan data acara:", error);
+                hideLoading();
+                showToast("Ralat memuatkan data acara.", "error");
+            }
+        };
+
+        // --- FUNGSI 10: HANTAR BORANG ACARA ---
+        const submitEventForm = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const title = document.getElementById('eventTitle').value.trim();
+                const date = document.getElementById('eventDate').value;
+                const time = document.getElementById('eventTime').value;
+                const location = document.getElementById('eventLocation').value.trim();
+                const description = document.getElementById('eventDescription').value.trim();
+                const capacity = parseInt(document.getElementById('eventCapacity').value, 10);
+                
+                // Create date object
+                const eventDate = new Date(date);
+                
+                if (isEditMode) {
+                    // Update existing event
+                    const eventDoc = doc(db, "events", currentEventId);
+                    await updateDoc(eventDoc, {
+                        title: title,
+                        date: eventDate,
+                        time: time,
+                        location: location,
+                        description: description,
+                        capacity: capacity,
+                        updatedAt: serverTimestamp()
+                    });
+                    
+                    showToast("Acara berjaya dikemaskini!", "success");
+                } else {
+                    // Create new event
+                    await addDoc(collection(db, "events"), {
+                        title: title,
+                        date: eventDate,
+                        time: time,
+                        location: location,
+                        description: description,
+                        capacity: capacity,
+                        attendees: [],
+                        createdBy: currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                    
+                    showToast("Acara berjaya dicipta!", "success");
+                }
+                
+                // Close modal and reset form
+                eventModalEl.classList.remove('active');
+                eventFormEl.reset();
+                
+                // Refresh events
+                await fetchUpcomingEvents();
+                await fetchManageEvents();
+                
+                hideLoading();
+                
+            } catch (error) {
+                console.error("Ralat menyimpan acara:", error);
+                hideLoading();
+                showToast("Ralat menyimpan acara. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- FUNGSI 11: PADAM ACARA ---
+        window.deleteEvent = async (eventId) => {
+            if (!confirm("Adakah anda pasti ingin memadam acara ini?")) {
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                // Delete event
+                await deleteDoc(doc(db, "events", eventId));
+                
+                // Refresh events
+                await fetchUpcomingEvents();
+                await fetchManageEvents();
+                
+                hideLoading();
+                showToast("Acara berjaya dipadam.", "success");
+                
+            } catch (error) {
+                console.error("Ralat memadam acara:", error);
+                hideLoading();
+                showToast("Ralat memadam acara. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        
+        // Tab switching
+        tabsEl.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and contents
+                tabsEl.forEach(t => t.classList.remove('active'));
+                tabContentsEl.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                
+                // Load data for the active tab
+                if (tabId === 'upcoming') {
+                    fetchUpcomingEvents();
+                } else if (tabId === 'past') {
+                    fetchPastEvents();
+                } else if (tabId === 'manage') {
+                    fetchManageEvents();
+                }
+            });
+        });
+        
+        // Modal event listeners
+        createEventBtnEl.addEventListener('click', createEvent);
+        
+        closeRegistrationModalEl.addEventListener('click', () => {
+            registrationModalEl.classList.remove('active');
+        });
+        
+        closeEventModalEl.addEventListener('click', () => {
+            eventModalEl.classList.remove('active');
+        });
+        
+        cancelRegistrationEl.addEventListener('click', () => {
+            registrationModalEl.classList.remove('active');
+        });
+        
+        cancelEventEl.addEventListener('click', () => {
+            eventModalEl.classList.remove('active');
+        });
+        
+        // Close modals when clicking outside
+        registrationModalEl.addEventListener('click', (e) => {
+            if (e.target === registrationModalEl) {
+                registrationModalEl.classList.remove('active');
+            }
+        });
+        
+        eventModalEl.addEventListener('click', (e) => {
+            if (e.target === eventModalEl) {
+                eventModalEl.classList.remove('active');
+            }
+        });
+        
+        // Form submissions
+        registrationFormEl.addEventListener('submit', submitRegistration);
+        eventFormEl.addEventListener('submit', submitEventForm);
+
+        // Event listener untuk Log Keluar
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                showToast("Anda telah berjaya log keluar.", "success");
+            }).catch((error) => {
+                hideLoading();
+                console.error("Ralat log keluar:", error);
+                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+            });
+        });
+
+        // Auth State Change Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Pengguna log masuk
+                currentUser = user;
+                showLoading();
+                
+                // Load all data in parallel
+                Promise.all([
+                    updateHeaderProfile(user.uid),
+                    fetchUpcomingEvents()
+                ]).then(() => {
+                    hideLoading();
+                }).catch((error) => {
+                    console.error("Ralat memuatkan data:", error);
+                    hideLoading();
+                    showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
+                });
+            } else {
+                // Pengguna log keluar, redirect ke halaman log masuk
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+/* ==================================== */
+/* CUSTOM PROPERTIES */
+/* ==================================== */
+:root {
+  --primary-color: #0f172a;    /* Biru gelap korporat (sidebar-bg) */
+  --accent-color: #3b82f6;     /* Biru terang (sidebar-active) */
+  --bg-color: #f1f5f9;         /* Latar belakang kelabu cair (primary-bg) */
+  --text-color: #334155;
+  --error-color: #ef4444;
+  --success-color: #166534; 
+  --success-bg: #dcfce7;
+  --success-border: #bbf7d0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  /* Corak latar belakang halus (sama seperti dashboard background) */
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 20px 20px;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-color);
+}
+
+/* Container Utama */
+.login-card {
+  background: white;
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+  margin: 20px;
+}
+
+/* Header */
+.header { text-align: center; margin-bottom: 2rem; }
+.logo-placeholder {
+  width: 60px; height: 60px;
+  background: var(--primary-color);
+  border-radius: 12px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+.header h1 { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem; }
+.header p { font-size: 0.9rem; color: #64748b; }
+
+/* Form Elements */
+.form-group { margin-bottom: 1.25rem; position: relative; }
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Password Toggle Eye */
+.password-wrapper { position: relative; }
+.toggle-password {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  user-select: none;
+  /* Tambah padding untuk kawasan klik yang lebih besar */
+  padding: 5px; 
+  /* Perlu 24px untuk ikon SVG 20x20 + padding */
+  height: 24px; 
+  width: 24px;
+}
+.toggle-password:hover {
+  color: var(--primary-color);
+}
+.toggle-password svg { 
+  width: 20px; 
+  height: 20px; 
+  display: block; /* Penting untuk pusatkan SVG */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Button */
+.btn-primary {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-primary:hover { background-color: #1e293b; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+/* Links */
+.extra-links {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  margin-top: 1.5rem;
+}
+.extra-links a { text-decoration: none; color: var(--accent-color); font-weight: 500; transition: color 0.2s; }
+.extra-links a:hover { color: var(--primary-color); }
+
+/* Alert Message (Menggunakan pemboleh ubah success/error) */
+#alert-box {
+  display: none;
+  padding: 0.75rem;
+  margin-bottom: 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+/* Loading Spinner */
+.spinner {
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top: 3px solid white;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+  display: none;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

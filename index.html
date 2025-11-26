@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Persatuan UKAY PERDANA</title>
+    
+    <!-- PWA: Guna font yang sama dengan dashboard untuk konsistensi -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        /* PWA: Guna CSS variables yang sama dengan dashboard */
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --success-bg: #f0fdf4;
+            --success-color: #166534;
+            --success-border: #bbf7d0;
+            --error-bg: #fef2f2;
+            --error-color: #991b1b;
+            --error-border: #fecaca;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .login-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://picsum.photos/seed/community/1600/800.jpg');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 5rem 0;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background-color: white;
+            color: var(--primary);
+        }
+
+        /* Sections */
+        .section {
+            padding: 5rem 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .section-title p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* About Section */
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .about-text h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .about-text p {
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .about-image {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .about-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Membership Section */
+        .membership-cards {
+            display: flex;
+            justify-content: center; /* Center the single card */
+        }
+
+        .membership-card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            max-width: 400px; /* Limit max width for single card */
+            width: 100%;
+        }
+
+        .membership-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .membership-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        .membership-card .price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .membership-card ul {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .membership-card li {
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: flex-start; /* Align items to the start */
+            gap: 0.5rem;
+        }
+        
+        .membership-card li i {
+            color: var(--success);
+            margin-top: 2px; /* Align icon with text */
+        }
+
+        /* Register Section */
+        .register {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .register-content {
+            text-align: center;
+        }
+
+        .register h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .register p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-column a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-column a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Login Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 420px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .login-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .logo-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            background: var(--primary);
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+        }
+
+        .login-header h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.875rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .toggle-password svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.875rem;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-login:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-login:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #alert-box {
+            display: none;
+            padding: 0.875rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid;
+        }
+
+        .extra-links {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .extra-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: text-decoration 0.3s;
+        }
+
+        .extra-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .about-content {
+                grid-template-columns: 1fr;
+            }
+
+            .membership-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <i class="ph ph-house-line" style="font-size: 1.5rem;"></i>
+                <span>PERSATUAN UKAY PERDANA</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Utama</a></li>
+                <li><a href="#about">Tentang Kami</a></li>
+                <li><a href="#membership">Pakej Keahlian</a></li>
+                <li><a href="#register">Daftar</a></li>
+                <li><a href="#contact">Hubungi</a></li>
+            </ul>
+            <button class="login-btn" id="openLoginModal">Log Masuk</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>Selamat Datang ke Persatuan Penduduk UKAY PERDANA</h1>
+            <p>Wadah perpaduan dan kebajikan untuk membina komuniti yang sejahtera dan saling membantu.</p>
+            <div class="cta-buttons">
+                <a href="#membership" class="btn btn-primary">Pakej Keahlian</a>
+                <a href="#register" class="btn btn-secondary">Daftar Sekarang</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <!-- KEMASKINI: Tahun penubuhan dan Visi & Misi -->
+    <section class="section" id="about">
+        <div class="container">
+            <div class="section-title">
+                <h2>Tentang Kami</h2>
+                <p>Mengenai Persatuan Penduduk UKAY PERDANA dan matlamat penubuhannya</p>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Visi & Misi Kami</h3>
+                    <p>Persatuan Penduduk UKAY PERDANA ditubuhkan pada tahun <strong>2024</strong> sebagai satu platform rasmi untuk mewakili dan membela kepentingan seluruh penduduk di kawasan ini.</p>
+                    <p><strong>Visi kami</strong> adalah untuk menjadi persatuan penduduk yang terulung dalam membangunkan komuniti yang selamat, harmoni dan sejahtera.</p>
+                    <p><strong>Misi kami</strong> adalah untuk menjadi wadah perpaduan penduduk, menyediakan bantuan sosial, menganjurkan aktiviti komuniti yang membina, dan menjadi suara penduduk dalam isu-isu kejiranan.</p>
+                </div>
+                <div class="about-image">
+                    <img src="https://picsum.photos/seed/community2/600/400.jpg" alt="Gambar aktiviti persatuan">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Membership Section -->
+    <!-- KEMASKINI: Pakej keahlian yang baharu -->
+    <section class="section" id="membership">
+        <div class="container">
+            <div class="section-title">
+                <h2>Pakej Keahlian</h2>
+                <p>Sertai kami untuk menikmati pelbagai faedah keahlian</p>
+            </div>
+            <div class="membership-cards">
+                <div class="membership-card">
+                    <h3>Ahli Persatuan</h3>
+                    <div class="price">RM5<span style="font-size: 1rem; font-weight: 400;">/bulan
+                    <ul>
+                        <li><i class="ph ph-check-circle"></i> Bantuan kewangan untuk musibah (kemalangan, kebakaran, banjir)</li>
+                        <li><i class="ph ph-check-circle"></i> Sumbangan ikhlas untuk kematian ahli keluarga</li>
+                        <li><i class="ph ph-check-circle"></i> Hadiah perkahwinan untuk ahli</li>
+                        <li><i class="ph ph-check-circle"></i> Hadiah kelahiran anak untuk ahli</li>
+                        <li><i class="ph ph-check-circle"></i> Akses kepada program dan aktiviti komuniti</li>
+                        <li><i class="ph ph-check-circle"></i> Bantuan kecemasan dan nasihat kejiranan</li>
+                        <li><i class="ph ph-check-circle"></i> Mewakili suara penduduk dalam isu tempatan</li>
+                    </ul>
+                    <a href="register.html" class="btn btn-primary" style="width: 100%; text-align: center;">Pilih Pakej</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Register Section -->
+    <section class="section register" id="register">
+        <div class="container">
+            <div class="register-content">
+                <h2>Daftar Sebagai Ahli</h2>
+                <p>Sertai kami hari ini dan menjadi sebahagian daripada komuniti yang dinamik dan saling membantu. Proses pendaftaran adalah mudah dan cepat.</p>
+                <div class="cta-buttons">
+                    <a href="register.html" class="btn btn-secondary" style="background-color: white; color: var(--primary);">Daftar Sekarang</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>Persatuan Penduduk UKAY PERDANA</h3>
+                    <p>Wadah perpaduan dan kebajikan untuk komuniti UKAY PERDANA.</p>
+                </div>
+                <div class="footer-column">
+                    <h3>Pautan Pantas</h3>
+                    <ul>
+                        <li><a href="#home">Utama</a></li>
+                        <li><a href="#about">Tentang Kami</a></li>
+                        <li><a href="#membership">Pakej Keahlian</a></li>
+                        <li><a href="#register">Daftar</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Hubungi Kami</h3>
+                    <ul>
+                        <li><i class="ph ph-envelope"></i> persatuanukayperdana@gmail.com</li>
+                        <li><i class="ph ph-phone"></i> +60 17-330 4906</li>
+                        <li><i class="ph ph-map-pin"></i> Jalan UKAY PERDANA, 68000 ampang, Selangor</li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Ikuti Kami</h3>
+                    <ul>
+                        <li><a href="#">Facebook</a></li>
+                        <li><a href="#">Instagram</a></li>
+                        <li><a href="#">Twitter</a></li>
+                        <li><a href="#">Tiktok</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Persatuan Penduduk UKAY PERDANA. Hak Cipta Terpelihara.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeLoginModal">&times;</button>
+            <div class="login-header">
+                <div class="logo-placeholder">
+                    <i class="ph ph-house-line" style="font-size: 2.5rem;"></i>
+                </div> 
+                <h2>PERSATUAN UKAY PERDANA</h2>
+                <p>Sila log masuk untuk mengakses sistem persatuan.</p>
+            </div>
+
+            <div id="alert-box"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Alamat Emel</label>
+                    <input type="email" id="email" placeholder="nama@contoh.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Kata Laluan</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" placeholder="Masukkan kata laluan" required autocomplete="current-password">
+                        <span class="toggle-password" id="togglePassword">
+                            <i class="ph ph-eye" style="font-size: 1.25rem;"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <div class="spinner" id="loadingSpinner"></div>
+                    <span id="btnText">Log Masuk</span>
+                </button>
+            </form>
+
+            <div class="extra-links">
+                <a href="#" id="forgotPasswordLink">Lupa kata laluan?</a>
+                <a href="register.html">Daftar akaun baru</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./firebase-init.js"></script>
+    
+    <script type="module">
+        import { auth } from './firebase-init.js';
+        import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // DOM Elements
+        const loginModal = document.getElementById('loginModal');
+        const openLoginModalBtn = document.getElementById('openLoginModal');
+        const closeLoginModalBtn = document.getElementById('closeLoginModal');
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('loadingSpinner');
+        const alertBox = document.getElementById('alert-box');
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+
+        // Modal Functions
+        const openLoginModal = () => {
+            loginModal.style.display = 'flex';
+        };
+
+        const closeLoginModal = () => {
+            loginModal.style.display = 'none';
+        };
+
+        openLoginModalBtn.addEventListener('click', openLoginModal);
+        closeLoginModalBtn.addEventListener('click', closeLoginModal);
+
+        // Close modal when clicking outside of it
+        window.addEventListener('click', (event) => {
+            if (event.target === loginModal) {
+                closeLoginModal();
+            }
+        });
+
+        // UI Functions
+        const setLoading = (isLoading) => {
+            if (isLoading) {
+                loginBtn.disabled = true;
+                btnText.textContent = "Memproses...";
+                spinner.style.display = "block";
+                alertBox.style.display = "none";
+            } else {
+                loginBtn.disabled = false;
+                btnText.textContent = "Log Masuk";
+                spinner.style.display = "none";
+            }
+        };
+
+        // PWA: Fungsi papar mesej yang lebih baik dengan CSS variables
+        const showMessage = (msg, isError = true) => {
+            alertBox.textContent = msg;
+            alertBox.style.display = "block";
+
+            if (isError) {
+                alertBox.style.backgroundColor = 'var(--error-bg)';
+                alertBox.style.color = 'var(--error-color)';
+                alertBox.style.borderColor = 'var(--error-border)';
+            } else {
+                alertBox.style.backgroundColor = 'var(--success-bg)';
+                alertBox.style.color = 'var(--success-color)';
+                alertBox.style.borderColor = 'var(--success-border)';
+            }
+        };
+
+        // PWA: Fungsi toggle kata laluan yang lebih moden
+        const togglePassword = () => {
+            const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passInput.setAttribute('type', type);
+            
+            // Tukar ikon
+            const icon = togglePasswordBtn.querySelector('i');
+            icon.className = type === 'password' ? 'ph ph-eye' : 'ph ph-eye-slash';
+        };
+        togglePasswordBtn.addEventListener('click', togglePassword);
+
+        // PWA: Ganti alert() dengan mesej yang lebih mesra
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showMessage('Fungsi reset kata laluan akan datang. Sila hubungi admin.', true);
+        });
+
+        // Login Event Handler
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault(); 
+            const email = emailInput.value;
+            const password = passInput.value;
+
+            setLoading(true);
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    // Berjaya log masuk
+                    showMessage("Berjaya! Mengalihkan ke papan utama...", false);
+                    
+                    // Simpan kata laluan dalam sessionStorage untuk kegunaan semula
+                    sessionStorage.setItem('adminPassword', password);
+                    
+                    // Redirect selepas 1.5 saat
+                    setTimeout(() => {
+                        window.location.replace("dashboard.html"); 
+                    }, 1500);
+                })
+                .catch((error) => {
+                    setLoading(false);
+                    console.error("Firebase Auth Error:", error.code);
+                    
+                    // Pengendalian Error Firebase yang lebih mesra pengguna
+                    switch(error.code) {
+                        case 'auth/invalid-credential':
+                        case 'auth/user-not-found':
+                        case 'auth/wrong-password':
+                            showMessage("Emel atau kata laluan tidak sah.");
+                            break;
+                        case 'auth/invalid-email':
+                            showMessage("Format emel tidak sah.");
+                            break;
+                        case 'auth/missing-password':
+                            showMessage("Sila masukkan kata laluan.");
+                            break;
+                        case 'auth/too-many-requests':
+                            showMessage("Terlalu banyak percubaan gagal. Sila cuba lagi sebentar.");
+                            break;
+                        default:
+                            showMessage("Ralat sistem. Sila cuba lagi.");
+                    }
+                });
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // PWA: Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

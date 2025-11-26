@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kewangan - Portal Komuniti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;      /* Dark Blue */
+            --accent: #2563eb;       /* Bright Blue */
+            --bg-body: #f1f5f9;      /* Light Grey */
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        /* --- ADMIN ONLY STYLES --- */
+        .admin-only {
+            display: none; /* Sembunyikan menu admin secara default */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .admin-badge {
+            background-color: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            text-transform: uppercase;
+            display: none;
+            vertical-align: middle;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%;
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* --- DASHBOARD WIDGETS --- */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), #1e293b);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+        }
+
+        .card h3 { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-bottom: 0.5rem; }
+        .card .number { font-size: 1.8rem; font-weight: 700; color: var(--text-main); }
+        .card .trend { font-size: 0.8rem; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+        
+        .text-success { color: var(--success) !important; }
+        .text-danger { color: var(--danger) !important; }
+
+        /* Tables & Lists */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin-bottom: 1rem;
+        }
+        
+        .member-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        
+        .member-table th { 
+            text-align: left; 
+            padding: 12px; 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            border-bottom: 1px solid #e2e8f0; 
+        }
+        
+        .member-table td { 
+            padding: 16px 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 0.95rem; 
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-badge.active { 
+            background: #dcfce7; 
+            color: #166534; 
+        }
+        
+        .status-badge.inactive { 
+            background: #fee2e2; 
+            color: #991b1b; 
+        }
+
+        .status-active {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-due {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 2px solid var(--accent);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary-outline:hover {
+            background: var(--accent);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        /* Payment Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #e2e8f0;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-cancel:hover {
+            background: var(--bg-body);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 70px;
+                width: 100%;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .welcome-banner h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group admin-only" id="adminMenu">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="#" class="active"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2 id="pageTitle">Kewangan <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Pengurusan yuran dan pembayaran komuniti.</p>
+            </div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                </div>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div class="welcome-banner">
+                <h1>Portal Kewangan</h1>
+                <p style="opacity: 0.9; max-width: 600px;">Pantau status pembayaran yuran anda dan lakukan pembayaran dengan mudah.</p>
+                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+                    <i class="ph ph-receipt"></i>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Yuran Bulanan</h3>
+                        <i class="ph ph-wallet" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number text-success" id="monthlyFee">RM 5.00</div>
+                    <div class="trend">
+                        <span id="currentMonth">Bulan Semasa: </span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Yuran Tahunan</h3>
+                        <i class="ph ph-calendar" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number text-warning" id="annualFee">RM 60.00</div>
+                    <div class="trend">
+                        <span id="currentYear">Tahun Semasa: </span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Status Pembayaran</h3>
+                        <i class="ph ph-clock-countdown" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number text-danger" id="paymentStatus">Memuatkan...</div>
+                    <div class="trend" id="paymentDueDate">
+                        <span style="font-size: 0.75rem; color: #64748b;">Memuatkan tarikh akhir...</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Jumlah Tertunggak</h3>
+                        <i class="ph ph-money" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number" id="totalOverdue">Memuatkan...</div>
+                    <div class="trend">
+                        <span style="font-size: 0.75rem; color: #64748b;">Jumlah semua yuran tertunggak</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-top: 2rem;">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class="ph ph-clock-counter-clockwise"></i>
+                    Sejarah Transaksi
+                </h3>
+                
+                <div class="table-responsive">
+                    <table class="member-table">
+                        <thead>
+                            <tr>
+                                <th>Tarikh</th>
+                                <th>Deskripsi</th>
+                                <th>Jumlah</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionHistory">
+                            <tr><td colspan="4" style="text-align: center;">Memuatkan sejarah transaksi...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button class="btn-primary-outline" id="makePaymentBtn">
+                        <i class="ph ph-credit-card"></i>
+                        Buat Pembayaran Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Payment Modal -->
+    <div class="modal" id="paymentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Buat Pembayaran</h3>
+                <button class="modal-close" id="closeModalBtn">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="paymentForm">
+                <div class="form-group">
+                    <label for="paymentType">Jenis Pembayaran</label>
+                    <select id="paymentType" required>
+                        <option value="">Pilih jenis pembayaran</option>
+                        <option value="monthly">Yuran Bulanan (RM 5)</option>
+                        <option value="annual">Yuran Tahunan (RM 60)</option>
+                        <option value="special">Yuran Khas</option>
+                        <option value="donation">Derma</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMonth">Bulan</label>
+                    <select id="paymentMonth" required>
+                        <option value="">Pilih bulan</option>
+                        <option value="1">Januari</option>
+                        <option value="2">Februari</option>
+                        <option value="3">Mac</option>
+                        <option value="4">April</option>
+                        <option value="5">Mei</option>
+                        <option value="6">Jun</option>
+                        <option value="7">Julai</option>
+                        <option value="8">Ogos</option>
+                        <option value="9">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Disember</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentYear">Tahun</label>
+                    <select id="paymentYear" required>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentAmount">Jumlah (RM)</label>
+                    <input type="number" id="paymentAmount" min="0" step="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMethod">Kaedah Pembayaran</label>
+                    <select id="paymentMethod" required>
+                        <option value="">Pilih kaedah pembayaran</option>
+                        <option value="online">Pembayaran Online</option>
+                        <option value="bank">Pemindahan Bank</option>
+                        <option value="cash">Tunai (di pejabat)</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelPaymentBtn">Batal</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ph ph-check"></i>
+                        Hantar Pembayaran
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="ph ph-info" id="toastIcon"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, query, getDocs, orderBy, addDoc, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- DEFINE FEES HERE FOR EASY MANAGEMENT ---
+        const MONTHLY_FEE = 5;
+        const ANNUAL_FEE = 60;
+
+        // ID Elemen DOM
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const monthlyFeeEl = document.getElementById('monthlyFee');
+        const annualFeeEl = document.getElementById('annualFee');
+        const currentMonthEl = document.getElementById('currentMonth');
+        const currentYearEl = document.getElementById('currentYear');
+        const paymentStatusEl = document.getElementById('paymentStatus');
+        const paymentDueDateEl = document.getElementById('paymentDueDate');
+        const totalOverdueEl = document.getElementById('totalOverdue');
+        const transactionHistoryEl = document.getElementById('transactionHistory');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        
+        // Modal Elements
+        const paymentModalEl = document.getElementById('paymentModal');
+        const makePaymentBtnEl = document.getElementById('makePaymentBtn');
+        const closeModalBtnEl = document.getElementById('closeModalBtn');
+        const cancelPaymentBtnEl = document.getElementById('cancelPaymentBtn');
+        const paymentFormEl = document.getElementById('paymentForm');
+        const paymentYearSelectEl = document.getElementById('paymentYear'); // FIX: Corrected ID
+        
+        // Elemen Admin
+        const adminMenuEl = document.getElementById('adminMenu');
+        const adminBadgeEl = document.getElementById('adminBadge');
+        
+        // Toast notification elements
+        const toastEl = document.getElementById('toast');
+        const toastMessageEl = document.getElementById('toastMessage');
+        const toastIconEl = document.getElementById('toastIcon');
+
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // Show toast notification
+        const showToast = (message, type = 'info') => {
+            toastMessageEl.textContent = message;
+            
+            // Reset classes
+            toastEl.className = 'toast';
+            
+            // Set appropriate class and icon based on type
+            switch(type) {
+                case 'success':
+                    toastEl.classList.add('success');
+                    toastIconEl.className = 'ph ph-check-circle';
+                    break;
+                case 'error':
+                    toastEl.classList.add('error');
+                    toastIconEl.className = 'ph ph-warning-circle';
+                    break;
+                default:
+                    toastEl.classList.add('info');
+                    toastIconEl.className = 'ph ph-info';
+            }
+            
+            // Show toast
+            toastEl.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        };
+
+        // Toggle sidebar for mobile
+        sidebarToggleEl.addEventListener('click', () => {
+            sidebarEl.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebarEl.contains(e.target) && 
+                !sidebarToggleEl.contains(e.target) && 
+                sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+            }
+        });
+
+        // Format currency
+        const formatCurrency = (amount) => {
+            return `RM ${parseFloat(amount).toFixed(2)}`;
+        };
+
+        // Get month name
+        const getMonthName = (monthNumber) => {
+            const months = [
+                'Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun',
+                'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'
+            ];
+            return months[parseInt(monthNumber) - 1] || '';
+        };
+
+        // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
+        const updateHeaderProfile = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid); 
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    if (data.role === 'admin') {
+                        adminMenuEl.style.display = 'block';
+                        adminBadgeEl.style.display = 'inline-block';
+                    } else {
+                        adminMenuEl.style.display = 'none';
+                        adminBadgeEl.style.display = 'none';
+                    }
+                    
+                    const name = data.fullName || 'Ahli';
+                    userNameEl.textContent = name;
+                    userRankEl.textContent = data.memberRank || 'Ahli Biasa';
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+                } else {
+                    userNameEl.textContent = 'Tetamu';
+                    userRankEl.textContent = 'Tidak Berdaftar';
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan profil header:", error);
+                showToast("Ralat memuatkan profil.", "error");
+            }
+        };
+
+        // --- FUNGSI 2: MUATKAN DATA KEWANGAN PENGGUNA ---
+        const fetchFinancialData = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid); 
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Set monthly and annual fees
+                    monthlyFeeEl.textContent = formatCurrency(MONTHLY_FEE);
+                    annualFeeEl.textContent = formatCurrency(ANNUAL_FEE);
+                    
+                    // Get current month and year
+                    const currentDate = new Date();
+                    const currentMonth = currentDate.getMonth() + 1;
+                    const currentYear = currentDate.getFullYear();
+                    currentMonthEl.textContent = `Bulan Semasa: ${getMonthName(currentMonth)} ${currentYear}`;
+                    currentYearEl.textContent = `Tahun Semasa: ${currentYear}`;
+                    
+                    // Calculate overdue amount
+                    const dueAmount = data.dueAmount || 0;
+                    totalOverdueEl.textContent = formatCurrency(dueAmount);
+                    totalOverdueEl.className = `number ${dueAmount > 0 ? 'text-danger' : 'text-success'}`;
+                    
+                    // Set payment status
+                    if (dueAmount > 0) {
+                        paymentStatusEl.textContent = 'Tertunggak';
+                        paymentStatusEl.className = 'number text-danger';
+                        
+                        // Calculate due date (end of current month)
+                        const lastDayOfMonth = new Date(currentYear, currentMonth, 0).getDate();
+                        paymentDueDateEl.innerHTML = `<span style="font-size: 0.75rem; color: var(--danger);">Tarikh Akhir: ${lastDayOfMonth} ${getMonthName(currentMonth)} ${currentYear}</span>`;
+                    } else {
+                        paymentStatusEl.textContent = 'Lunas';
+                        paymentStatusEl.className = 'number text-success';
+                        paymentDueDateEl.innerHTML = `<span style="font-size: 0.75rem; color: var(--success);">Tiada pembayaran tertunggak</span>`;
+                    }
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan data kewangan:", error);
+                showToast("Ralat memuatkan data kewangan.", "error");
+            }
+        };
+
+        // --- FUNGSI 3: MUATKAN SEJARAH TRANSAKSI ---
+        const fetchTransactionHistory = async (uid) => {
+            try {
+                const q = query(
+                    collection(db, "users", uid, "transactions"),
+                    orderBy("date", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                transactionHistoryEl.innerHTML = '';
+                
+                if (querySnapshot.empty) {
+                    transactionHistoryEl.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tiada sejarah transaksi.</td></tr>';
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const transaction = doc.data();
+                        
+                        // Format date
+                        let dateText = 'Tiada Tarikh';
+                        if (transaction.date && transaction.date.toDate) {
+                            dateText = transaction.date.toDate().toLocaleDateString('ms-MY');
+                        }
+                        
+                        // Status badge
+                        const statusClass = transaction.status === 'success' ? 'status-active' : 'status-due';
+                        const statusText = transaction.status === 'success' ? 'Lunas' : 'Tertunggak';
+                        
+                        const row = `
+                            <tr>
+                                <td>${dateText}</td>
+                                <td>${transaction.description || 'Tiada Deskripsi'}</td>
+                                <td>${formatCurrency(transaction.amount || 0)}</td>
+                                <td><span class="${statusClass}">${statusText}</span></td>
+                            </tr>
+                        `;
+                        transactionHistoryEl.innerHTML += row;
+                    });
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan sejarah transaksi:", error);
+                transactionHistoryEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Ralat memuatkan sejarah transaksi.</td></tr>';
+                showToast("Ralat memuatkan sejarah transaksi.", "error");
+            }
+        };
+
+        // --- FUNGSI 4: INISIALISASI BORANG PEMBAYARAN ---
+        const initializePaymentForm = () => {
+            // Populate year options (current year and next 2 years)
+            const currentYear = new Date().getFullYear();
+            paymentYearSelectEl.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                const year = currentYear + i;
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                paymentYearSelectEl.appendChild(option);
+            }
+            
+            // Set default to current year
+            paymentYearSelectEl.value = currentYear;
+            
+            // Set default to current month
+            const currentMonth = new Date().getMonth() + 1;
+            document.getElementById('paymentMonth').value = currentMonth;
+            
+            // Set default amount to monthly fee
+            document.getElementById('paymentAmount').value = String(MONTHLY_FEE) + '.00';
+        };
+
+        // --- FUNGSI 5: HANTAR PEMBAYARAN ---
+        const submitPayment = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                console.log("Memulakan proses pembayaran...");
+                
+                // Get form values
+                const paymentType = document.getElementById('paymentType').value;
+                const paymentMonth = document.getElementById('paymentMonth').value;
+                const paymentYear = document.getElementById('paymentYear').value;
+                const paymentAmount = document.getElementById('paymentAmount').value;
+                const paymentMethod = document.getElementById('paymentMethod').value;
+                
+                console.log("Data pembayaran:", { paymentType, paymentMonth, paymentYear, paymentAmount, paymentMethod });
+                
+                // Get current user
+                const user = auth.currentUser;
+                if (!user) {
+                    showToast("Sila log masuk untuk membuat pembayaran.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                // Get user data for name and house number
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+                
+                // Create transaction record
+                let description = '';
+                if (paymentType === 'monthly') {
+                    description = `Yuran Bulanan - ${getMonthName(paymentMonth)} ${paymentYear}`;
+                } else if (paymentType === 'annual') {
+                    description = `Yuran Tahunan - ${paymentYear}`;
+                } else {
+                    description = `Pembayaran ${paymentType === 'special' ? 'Yuran Khas' : 'Derma'} - ${getMonthName(paymentMonth)} ${paymentYear}`;
+                }
+
+                const transactionData = {
+                    type: paymentType,
+                    month: paymentMonth,
+                    year: paymentYear,
+                    amount: parseFloat(paymentAmount),
+                    method: paymentMethod,
+                    status: 'success',
+                    date: serverTimestamp(),
+                    description: description
+                };
+                
+                console.log("Menambah transaksi pengguna...");
+                // Add to user's transactions
+                await addDoc(collection(db, "users", user.uid, "transactions"), transactionData);
+                console.log("Transaksi pengguna berjaya ditambah.");
+                
+                // Add to main payments collection for dashboard
+                const paymentData = {
+                    userId: user.uid,
+                    userName: userData.fullName || 'Unknown',
+                    userHouse: userData.houseNumber || 'Unknown',
+                    amount: parseFloat(paymentAmount),
+                    status: 'success', // This is what dashboard looks for
+                    paymentDate: serverTimestamp(),
+                    paymentMethod: paymentMethod,
+                    description: description,
+                    type: paymentType,
+                    month: paymentMonth,
+                    year: paymentYear
+                };
+                
+                console.log("Menambah ke koleksi payments utama...");
+                await addDoc(collection(db, "payments"), paymentData);
+                console.log("Rekod pembayaran utama berjaya ditambah.");
+                
+                // Update user's due amount
+                let newDueAmount = 0;
+                if (userData.dueAmount) {
+                    newDueAmount = Math.max(0, userData.dueAmount - parseFloat(paymentAmount));
+                }
+                
+                console.log(`Mengemas kini jumlah tertunggak dari ${userData.dueAmount} kepada ${newDueAmount}`);
+                await updateDoc(userDocRef, {
+                    dueAmount: newDueAmount
+                });
+                console.log("Jumlah tertunggak pengguna berjaya dikemas kini.");
+                
+                // Close modal and reset form
+                paymentModalEl.classList.remove('active');
+                paymentFormEl.reset();
+                initializePaymentForm();
+                
+                // Refresh financial data and transaction history
+                console.log("Memuatkan semula data kewangan...");
+                await Promise.all([
+                    fetchFinancialData(user.uid),
+                    fetchTransactionHistory(user.uid)
+                ]);
+                
+                hideLoading();
+                showToast("Pembayaran anda telah berjaya direkodkan.", "success");
+            } catch (error) {
+                console.error("Ralat menghantar pembayaran:", error);
+                hideLoading();
+                showToast("Ralat menghantar pembayaran. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        
+        // Payment modal
+        makePaymentBtnEl.addEventListener('click', () => {
+            paymentModalEl.classList.add('active');
+        });
+        
+        closeModalBtnEl.addEventListener('click', () => {
+            paymentModalEl.classList.remove('active');
+        });
+        
+        cancelPaymentBtnEl.addEventListener('click', () => {
+            paymentModalEl.classList.remove('active');
+        });
+        
+        // Close modal when clicking outside
+        paymentModalEl.addEventListener('click', (e) => {
+            if (e.target === paymentModalEl) {
+                paymentModalEl.classList.remove('active');
+            }
+        });
+        
+        // Payment form submission
+        paymentFormEl.addEventListener('submit', submitPayment);
+        
+        // Update payment amount when payment type changes
+        document.getElementById('paymentType').addEventListener('change', (e) => {
+            const amountInput = document.getElementById('paymentAmount');
+            if (e.target.value === 'monthly') {
+                amountInput.value = String(MONTHLY_FEE) + '.00';
+            } else if (e.target.value === 'annual') {
+                amountInput.value = String(ANNUAL_FEE) + '.00';
+            } else {
+                amountInput.value = '';
+            }
+        });
+
+        // Event listener untuk Log Keluar
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                window.location.href = "index.html";
+            }).catch((error) => {
+                hideLoading();
+                console.error("Ralat log keluar:", error);
+                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+            });
+        });
+
+        // Auth State Change Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Pengguna log masuk
+                showLoading();
+                
+                // Initialize payment form
+                initializePaymentForm();
+                
+                // Load all data in parallel
+                Promise.all([
+                    updateHeaderProfile(user.uid),
+                    fetchFinancialData(user.uid),
+                    fetchTransactionHistory(user.uid)
+                ]).then(() => {
+                    hideLoading();
+                }).catch((error) => {
+                    console.error("Ralat memuatkan data:", error);
+                    hideLoading();
+                    showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
+                });
+            } else {
+                // Pengguna log keluar, redirect ke halaman log masuk
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>

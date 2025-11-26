@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Portal Komuniti - Persatuan Penduduk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;      /* Dark Blue */
+            --accent: #2563eb;       /* Bright Blue */
+            --bg-body: #f1f5f9;      /* Light Grey */
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- PWA: Toast Notification Styles --- */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background-color: white;
+            color: var(--text-main);
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+        .toast.success i {
+            color: var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+        .toast.error i {
+            color: var(--danger);
+        }
+
+        /* --- MODAL --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* PWA: Refresh Button Style */
+        .btn-refresh {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-refresh:hover {
+            background-color: #cbd5e1;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+            margin-right: 1rem;
+        }
+
+        .btn-secondary:hover {
+            background-color: #cbd5e1;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        
+        .admin-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        /* --- ADMIN ONLY STYLES --- */
+        .admin-only {
+            display: none; /* Sembunyikan menu admin secara default */
+        }
+
+        .admin-badge {
+            background-color: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            text-transform: uppercase;
+            display: none;
+            vertical-align: middle;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%; /* Ensure full width relative to flex */
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* --- DASHBOARD WIDGETS --- */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), #1e293b);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        
+        /* Quick Actions Grid */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-btn {
+            background: var(--bg-card);
+            border: none;
+            padding: 1.5rem 1rem;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            color: var(--text-main);
+            height: 100%;
+        }
+
+        .action-btn i { font-size: 2rem; color: var(--accent); margin-bottom: 5px; }
+        .action-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        
+        /* New Community Services Grid */
+        .community-services-title {
+            margin: 2rem 0 1rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .service-card {
+            background: var(--bg-card);
+            padding: 1.2rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid #f1f5f9;
+        }
+
+        .service-card:hover { border-color: var(--accent); background: #f8fafc; }
+        .service-card i { font-size: 1.8rem; color: #475569; margin-bottom: 8px; display: block; }
+        .service-card span { font-size: 0.85rem; font-weight: 500; }
+
+        .sos-btn-full {
+            background: #fee2e2;
+            color: #dc2626;
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #fca5a5;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            margin-bottom: 2rem;
+            transition: 0.3s;
+        }
+        .sos-btn-full:hover { background: #dc2626; color: white; border-color: #dc2626; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+        }
+
+        .card h3 { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-bottom: 0.5rem; }
+        .card .number { font-size: 1.8rem; font-weight: 700; color: var(--text-main); }
+        .card .trend { font-size: 0.8rem; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+        
+        .text-success { color: var(--success) !important; }
+        .text-danger { color: var(--danger) !important; }
+
+        /* Tables & Lists */
+        .grid-split { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .member-table { width: 100%; border-collapse: collapse; }
+        .member-table th { text-align: left; padding: 12px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid #e2e8f0; }
+        .member-table td { padding: 16px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-badge.active { background: #dcfce7; color: #166534; }
+        .status-badge.inactive { background: #fee2e2; color: #991b1b; }
+        .status-badge.pending { background: #fef3c7; color: #92400e; }
+
+        .announcement-item {
+            padding: 1rem;
+            border-left: 3px solid #e2e8f0;
+            background: #f8fafc;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1rem;
+        }
+        .announcement-primary { border-left-color: var(--accent); background: #eff6ff; }
+
+        /* Income/Expense Item */
+        .income-item, .expense-item {
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .income-item {
+            border-left: 3px solid var(--success);
+            background: #f0fdf4;
+        }
+        .expense-item {
+            border-left: 3px solid var(--warning);
+            background: #fffbeb;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-amount {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .income-item .item-amount { color: var(--success); }
+        .expense-item .item-amount { color: var(--danger); }
+
+        /* Pending Members Section */
+        .pending-member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .pending-member-item:last-child {
+            border-bottom: none;
+        }
+
+        .pending-member-info {
+            flex: 1;
+        }
+
+        .pending-member-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .pending-member-details {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .pending-member-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content { 
+                margin-left: 0; 
+                padding: 1rem;
+                padding-top: 70px; /* Space for toggle button */
+                width: 100%; 
+            }
+            
+            .quick-actions { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .services-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .admin-actions { flex-direction: column; }
+            
+            .grid-split { grid-template-columns: 1fr; }
+            .welcome-banner h1 { font-size: 1.5rem; }
+            
+            .service-card { padding: 0.8rem; }
+            .service-card i { font-size: 1.5rem; }
+            .service-card span { font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PWA: Container for Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Income Modal -->
+    <div class="modal" id="incomeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tambah Duit Masuk</h2>
+                <button class="close-modal" id="closeIncomeModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <form id="incomeForm">
+                <div class="form-group">
+                    <label for="incomeSource">Sumber Pendapatan</label>
+                    <select id="incomeSource" required>
+                        <option value="">Pilih Sumber</option>
+                        <option value="derma">Derma</option>
+                        <option value="keuntungan_acara">Keuntungan Acara</option>
+                        <option value="sewa">Sewa Premis/Fasiliti</option>
+                        <option value="denda">Denda/Kompaun</option>
+                        <option value="lain-lain">Lain-lain</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="incomeDescription">Penerangan</label>
+                    <input type="text" id="incomeDescription" placeholder="Contoh: Jualan makanan Hari Raya" required>
+                </div>
+                <div class="form-group">
+                    <label for="incomeAmount">Jumlah (RM)</label>
+                    <input type="number" id="incomeAmount" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label for="incomeDate">Tarikh</label>
+                    <input type="date" id="incomeDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="incomeReceipt">No. Resit (jika ada)</label>
+                    <input type="text" id="incomeReceipt" placeholder="Contoh: INV-2023-001">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelIncome">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div class="modal" id="expenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tambah Duit Keluar</h2>
+                <button class="close-modal" id="closeExpenseModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label for="expenseCategory">Kategori Perbelanjaan</label>
+                    <select id="expenseCategory" required>
+                        <option value="">Pilih Kategori</option>
+                        <option value="penyelenggaraan">Penyelenggaraan</option>
+                        <option value="utiliti">Utiliti (Air, Elektrik)</option>
+                        <option value="acara">Acara & Aktiviti</option>
+                        <option value="keselamatan">Keselamatan</option>
+                        <option value="lain-lain">Lain-lain</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDescription">Penerangan</label>
+                    <input type="text" id="expenseDescription" placeholder="Contoh: Baiki pagar rosak" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseAmount">Jumlah (RM)</label>
+                    <input type="number" id="expenseAmount" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDate">Tarikh</label>
+                    <input type="date" id="expenseDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseReceipt">No. Resit (jika ada)</label>
+                    <input type="text" id="expenseReceipt" placeholder="Contoh: INV-2023-002">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelExpense">Batal</button>
+                    <button type="submit" class="btn btn-danger">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="#" class="active"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group admin-only" id="adminMenu">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2 id="pageTitle">Papan Utama <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Gambaran keseluruhan status komuniti anda.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- PWA: Refresh Data Button -->
+                <button class="btn-refresh" id="refreshDataBtn">
+                    <i class="ph ph-arrow-clockwise"></i>
+                    <span>Kemas Kini</span>
+                </button>
+                <div class="user-profile">
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                        <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                    </div>
+                    <div class="avatar" id="userAvatar">U</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div class="welcome-banner">
+                <h1 id="welcomeText">Selamat Kembali!</h1>
+                <p style="opacity: 0.9; max-width: 600px;">Terima kasih kerana menjadi jiran yang prihatin. Bersama kita menjaga keharmonian komuniti.</p>
+                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+                    <i class="ph ph-house"></i>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 600;">Aksi Pantas</h3>
+            <div class="quick-actions">
+                <button class="action-btn" onclick="window.location.href='kewangan.html'">
+                    <i class="ph ph-wallet"></i> 
+                    <span>Bayar Yuran</span>
+                </button>
+                
+                <button class="action-btn" onclick="window.location.href='senarai-ahli.html'">
+                    <i class="ph ph-users-three"></i> 
+                    <span>Senarai Ahli</span>
+                    <small style="font-size: 0.7rem; color: var(--text-muted); font-weight: normal;">Direktori Komuniti</small>
+                </button>
+                
+                <button class="action-btn" onclick="window.location.href='acara.html'">
+                    <i class="ph ph-calendar-star"></i> 
+                    <span>Acara</span>
+                    <small style="font-size: 0.7rem; color: var(--text-muted); font-weight: normal;">Aktiviti Akan Datang</small>
+                </button>
+                
+                <button class="action-btn" onclick="window.location.href='#announcementSection'">
+                    <i class="ph ph-megaphone"></i> 
+                    <span>Pengumuman</span>
+                    <small style="font-size: 0.7rem; color: var(--text-muted); font-weight: normal;">Info Terkini</small>
+                </button>
+            </div>
+
+            <div class="community-services-title">
+                <i class="ph ph-squares-four"></i> Perkhidmatan Komuniti
+            </div>
+            <div class="services-grid">
+                <div class="service-card" onclick="alert('Fungsi Pas Pelawat (QR Code) sedang dibangunkan.')">
+                    <i class="ph ph-qr-code" style="color: #6366f1;"></i>
+                    <span>Pas Pelawat</span>
+                </div>
+                <div class="service-card" onclick="window.location.href='aduan.html'">
+                    <i class="ph ph-wrench" style="color: #f59e0b;"></i>
+                    <span>Aduan/Baiki</span>
+                </div>
+                <div class="service-card" onclick="alert('Senarai nombor kecemasan: Polis (999), Guard House (012-3456789)')">
+                    <i class="ph ph-phone-call" style="color: #10b981;"></i>
+                    <span>Direktori</span>
+                </div>
+                <div class="service-card" onclick="alert('Tiada undian aktif masa ini.')">
+                    <i class="ph ph-chart-bar" style="color: #8b5cf6;"></i>
+                    <span>Undian/Poll</span>
+                </div>
+                <div class="service-card" onclick="window.location.href='tempahan.html'">
+                    <i class="ph ph-tennis-ball" style="color: #ec4899;"></i>
+                    <span>Fasiliti</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Status Akaun</h3>
+                        <i class="ph ph-user-circle" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number" id="memberStatus">...</div> 
+                    <div class="trend" id="statusIcon"></div>
+                </div>
+                
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Jumlah Ahli</h3>
+                        <i class="ph ph-house-line" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number" id="totalNeighbors">0</div>
+                    <div class="trend"><span class="text-success">Berdaftar dalam sistem</span></div>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Baki Tertunggak</h3>
+                        <i class="ph ph-money" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number" id="feeOverdue">...</div>
+                    <div class="trend"><span style="font-size: 0.75rem; color: #64748b;">Setakat bulan ini</span></div>
+                </div>
+            </div>
+            
+            <!-- NEW: Financial Summary Section -->
+            <h3 style="margin: 2rem 0 1rem 0; font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-piggy-bank"></i> Ringkasan Kewangan Persatuan
+            </h3>
+            <div class="stats-grid">
+                <!-- Total Funds Card -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Jumlah Duit Masuk</h3>
+                        <i class="ph ph-arrow-circle-down" style="color: var(--success);"></i>
+                    </div>
+                    <div class="number" id="totalFunds">RM 0.00</div>
+                    <div class="trend"><span style="font-size: 0.75rem; color: #64748b;">Jumlah keseluruhan pendapatan</span></div>
+                </div>
+
+                <!-- Total Expenses Card -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Jumlah Duit Keluar</h3>
+                        <i class="ph ph-arrow-circle-up" style="color: var(--danger);"></i>
+                    </div>
+                    <div class="number" id="totalExpenses">RM 0.00</div>
+                    <div class="trend"><span style="font-size: 0.75rem; color: #64748b;">Jumlah perbelanjaan bulan ini</span></div>
+                </div>
+
+                <!-- Net Balance Card -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Baki Bersih</h3>
+                        <i class="ph ph-coins" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div class="number" id="netBalance">RM 0.00</div>
+                    <div class="trend"><span style="font-size: 0.75rem; color: #64748b;">Baki semasa (Masuk - Keluar)</span></div>
+                </div>
+            </div>
+
+            <!-- Admin Action Buttons -->
+            <div class="admin-only admin-actions">
+                <button class="btn btn-success" id="addIncomeBtn" style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                    <i class="ph ph-plus-circle"></i>
+                    Tambah Duit Masuk
+                </button>
+                <button class="btn btn-danger" id="addExpenseBtn" style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                    <i class="ph ph-minus-circle"></i>
+                    Tambah Duit Keluar
+                </button>
+            </div>
+            
+            <!-- NEW: Pending Members Section (Admin Only) -->
+            <div class="card admin-only" id="pendingMembersSection" style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 0; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-clock-clockwise"></i>
+                        Kelulusan Ahli Baharu
+                    </h3>
+                    <span class="status-badge pending" id="pendingCount">0 Menunggu</span>
+                </div>
+                
+                <div id="pendingMembersList">
+                    <p style="text-align: center; color: #64748b; font-size: 0.9rem;">Tiada ahli menunggu kelulusan.</p>
+                </div>
+            </div>
+            
+            <div class="grid-split">
+                <div class="card member-list-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 0; color: var(--text-main); font-weight: 700;">Ahli Terkini</h3>
+                        <a href="senarai-ahli.html" style="font-size: 0.85rem; color: var(--accent); text-decoration: none;">Lihat Semua</a>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>Lorong</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memberListBody">
+                                <tr><td colspan="3" style="text-align: center; padding: 20px;">Memuatkan data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" id="announcementSection">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-main); font-weight: 700;">Papan Pengumuman</h3>
+                    <div id="announcementList">
+                        <p style="text-align: center; color: #64748b; font-size: 0.9rem;">Tiada notis baharu.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Only Sections -->
+            <div class="admin-only" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem;">
+                <!-- Recent Income Section -->
+                <div class="card" id="recentIncomeSection">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 0; color: var(--text-main); font-weight: 700;">Pendapatan Terkini</h3>
+                        <a href="admin-kewangan.html" style="font-size: 0.85rem; color: var(--accent); text-decoration: none;">Lihat Semua</a>
+                    </div>
+                    <div id="recentIncomeList">
+                        <p style="text-align: center; color: #64748b; font-size: 0.9rem;">Tiada pendapatan direkodkan.</p>
+                    </div>
+                </div>
+
+                <!-- Recent Expenses Section -->
+                <div class="card" id="recentExpensesSection">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 0; color: var(--text-main); font-weight: 700;">Perbelanjaan Terkini</h3>
+                        <a href="admin-kewangan.html" style="font-size: 0.85rem; color: var(--accent); text-decoration: none;">Lihat Semua</a>
+                    </div>
+                    <div id="recentExpensesList">
+                        <p style="text-align: center; color: #64748b; font-size: 0.9rem;">Tiada perbelanjaan direkodkan.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, query, limit, getDocs, orderBy, getCountFromServer, where, addDoc, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ID Elemen DOM
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const welcomeTextEl = document.getElementById('welcomeText');
+        const memberStatusEl = document.getElementById('memberStatus');
+        const feeOverdueEl = document.getElementById('feeOverdue');
+        const totalNeighborsEl = document.getElementById('totalNeighbors');
+        const totalFundsEl = document.getElementById('totalFunds');
+        const totalExpensesEl = document.getElementById('totalExpenses');
+        const netBalanceEl = document.getElementById('netBalance');
+        const memberListBodyEl = document.getElementById('memberListBody'); 
+        const announcementListEl = document.getElementById('announcementList');
+        const recentIncomeListEl = document.getElementById('recentIncomeList');
+        const recentExpensesListEl = document.getElementById('recentExpensesList');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const statusIconEl = document.getElementById('statusIcon');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        const refreshDataBtn = document.getElementById('refreshDataBtn'); // PWA: Refresh Button
+        const toastContainerEl = document.getElementById('toastContainer'); // PWA: Toast Container
+        
+        // Elemen Admin
+        const adminMenuEl = document.getElementById('adminMenu');
+        const adminBadgeEl = document.getElementById('adminBadge');
+        const recentIncomeSectionEl = document.getElementById('recentIncomeSection');
+        const recentExpensesSectionEl = document.getElementById('recentExpensesSection');
+        const addIncomeBtnEl = document.getElementById('addIncomeBtn');
+        const addExpenseBtnEl = document.getElementById('addExpenseBtn');
+        
+        // Pending Members Elements
+        const pendingMembersSectionEl = document.getElementById('pendingMembersSection');
+        const pendingMembersListEl = document.getElementById('pendingMembersList');
+        const pendingCountEl = document.getElementById('pendingCount');
+        
+        // Modal Elements - Income
+        const incomeModalEl = document.getElementById('incomeModal');
+        const closeIncomeModalEl = document.getElementById('closeIncomeModal');
+        const cancelIncomeEl = document.getElementById('cancelIncome');
+        const incomeFormEl = document.getElementById('incomeForm');
+
+        // Modal Elements - Expense
+        const expenseModalEl = document.getElementById('expenseModal');
+        const closeExpenseModalEl = document.getElementById('closeExpenseModal');
+        const cancelExpenseEl = document.getElementById('cancelExpense');
+        const expenseFormEl = document.getElementById('expenseForm');
+        
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // PWA: Fungsi untuk paparkan notifikasi Toast
+        const showToast = (message, type = 'success') => {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+            
+            toast.innerHTML = `
+                <i class="ph ${icon}" style="font-size: 1.5rem;"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainerEl.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toastContainerEl.removeChild(toast);
+                }, 300);
+            }, 3000);
+        };
+
+        // Toggle sidebar for mobile
+        sidebarToggleEl.addEventListener('click', () => {
+            sidebarEl.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebarEl.contains(e.target) && 
+                !sidebarToggleEl.contains(e.target) && 
+                sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+            }
+        });
+
+        const formatCurrency = (amount) => {
+            return `RM ${parseFloat(amount).toFixed(2)}`;
+        };
+
+        // --- FUNGSI 1: Ambil Data Pengguna Sendiri ---
+        const fetchLoggedInMemberData = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid); 
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Show/hide admin-only elements
+                    if (data.role === 'admin') {
+                        // Use .style.display = 'flex' for grid layout
+                        const adminElements = [adminMenuEl, adminBadgeEl, recentIncomeSectionEl.parentElement, recentExpensesSectionEl.parentElement, addIncomeBtnEl.parentElement, pendingMembersSectionEl];
+                        adminElements.forEach(el => el.style.display = el.style.display === 'none' ? '' : el.style.display);
+                        adminMenuEl.style.display = 'block';
+                        adminBadgeEl.style.display = 'inline-block';
+                        recentIncomeSectionEl.parentElement.style.display = 'grid';
+                        addIncomeBtnEl.parentElement.style.display = 'flex';
+                        pendingMembersSectionEl.style.display = 'block';
+                    } else {
+                        adminMenuEl.style.display = 'none';
+                        adminBadgeEl.style.display = 'none';
+                        recentIncomeSectionEl.parentElement.style.display = 'none';
+                        addIncomeBtnEl.parentElement.style.display = 'none';
+                        pendingMembersSectionEl.style.display = 'none';
+                    }
+
+                    const name = data.fullName || 'Penduduk';
+                    const firstName = name.split(' ')[0];
+                    userNameEl.textContent = name;
+                    
+                    const displaySubtext = data.houseNumber ? `Rumah: ${data.houseNumber}` : (data.memberRank || 'Ahli Biasa');
+                    userRankEl.textContent = displaySubtext;
+                    
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+                    welcomeTextEl.textContent = `Selamat Kembali, ${firstName}!`;
+                    
+                    // Status Keahlian
+                    const status = data.isApproved; // Use isApproved instead of status
+                    const statusText = status ? 'Aktif' : 'Menunggu Kelulusan';
+                    memberStatusEl.textContent = statusText;
+                    memberStatusEl.className = `number ${status ? 'text-success' : 'text-warning'}`;
+                    
+                    if(status) {
+                        statusIconEl.innerHTML = '<span class="text-success"><i class="ph ph-check-circle"></i> Akaun Sah</span>';
+                    } else {
+                        statusIconEl.innerHTML = '<span class="text-warning"><i class="ph ph-clock-clockwise"></i> Menunggu Kelulusan</span>';
+                    }
+
+                    // Yuran
+                    const dueAmount = data.dueAmount || 0;
+                    const overdueText = dueAmount > 0 ? formatCurrency(dueAmount) : 'RM 0.00';
+                    feeOverdueEl.textContent = overdueText;
+                    feeOverdueEl.className = `number ${dueAmount > 0 ? 'text-danger' : 'text-success'}`;
+
+                }
+            } catch (error) {
+                console.error("Ralat mengambil data profil:", error);
+            }
+        };
+
+        // --- FUNGSI 2: Kira Jumlah Ahli ---
+        const fetchTotalMembers = async () => {
+            try {
+                const coll = collection(db, "users");
+                const snapshot = await getCountFromServer(coll);
+                totalNeighborsEl.textContent = snapshot.data().count;
+            } catch (error) {
+                console.error("Ralat kira ahli:", error);
+                totalNeighborsEl.textContent = "-";
+            }
+        };
+
+        // --- FUNGSI 3 (DIKEMASKINI): Dapatkan Jumlah Duit Masuk ---
+        const fetchTotalFunds = async () => {
+            try {
+                let totalAmount = 0;
+
+                // 1. Sum from 'payments' collection (member fees)
+                const paymentsQuery = query(collection(db, "payments"), where("status", "==", "success"));
+                const paymentsSnapshot = await getDocs(paymentsQuery);
+                paymentsSnapshot.forEach((doc) => {
+                    totalAmount += doc.data().amount || 0;
+                });
+
+                // 2. Sum from 'income' collection (other income)
+                const incomeQuery = query(collection(db, "income"));
+                const incomeSnapshot = await getDocs(incomeQuery);
+                incomeSnapshot.forEach((doc) => {
+                    totalAmount += doc.data().amount || 0;
+                });
+                
+                totalFundsEl.textContent = formatCurrency(totalAmount);
+                return totalAmount;
+
+            } catch (error) {
+                console.error("Ralat mengambil jumlah duit masuk:", error);
+                totalFundsEl.textContent = "RM 0.00";
+                return 0;
+            }
+        };
+
+        // --- FUNGSI 4: Dapatkan Jumlah Duit Keluar ---
+        const fetchTotalExpenses = async () => {
+            try {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                
+                const q = query(
+                    collection(db, "expenses"), 
+                    where("date", ">=", firstDay),
+                    where("date", "<=", lastDay)
+                );
+                const querySnapshot = await getDocs(q);
+                
+                let totalAmount = 0;
+                querySnapshot.forEach((doc) => {
+                    totalAmount += doc.data().amount || 0;
+                });
+                
+                totalExpensesEl.textContent = formatCurrency(totalAmount);
+                return totalAmount;
+
+            } catch (error) {
+                console.error("Ralat mengambil jumlah perbelanjaan:", error);
+                totalExpensesEl.textContent = "RM 0.00";
+                return 0;
+            }
+        };
+
+        // --- FUNGSI 5: Kira Baki Bersih ---
+        const calculateNetBalance = async () => {
+            try {
+                const totalFunds = await fetchTotalFunds();
+                const totalExpenses = await fetchTotalExpenses();
+                const netBalance = totalFunds - totalExpenses;
+                
+                netBalanceEl.textContent = formatCurrency(netBalance);
+                
+                if (netBalance < 0) {
+                    netBalanceEl.className = 'number text-danger';
+                } else if (netBalance < 1000) {
+                    netBalanceEl.className = 'number text-warning';
+                } else {
+                    netBalanceEl.className = 'number text-success';
+                }
+                
+                return netBalance;
+            } catch (error) {
+                console.error("Ralat mengira baki bersih:", error);
+                netBalanceEl.textContent = "RM 0.00";
+                return 0;
+            }
+        };
+
+        // --- FUNGSI 6: Senarai Ahli Ringkas ---
+        const fetchAndRenderMemberList = async () => {
+            try {
+                const q = query(collection(db, "users"), orderBy("joinedAt", "desc"), limit(4)); 
+                const querySnapshot = await getDocs(q);
+
+                memberListBodyEl.innerHTML = ''; 
+
+                if (querySnapshot.empty) {
+                    memberListBodyEl.innerHTML = '<tr><td colspan="3" style="text-align: center;">Tiada data ahli.</td></tr>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const name = data.fullName || 'N/A';
+                    const location = data.streetName || data.memberRank || 'Ahli';
+                    
+                    const statusIsActive = data.isApproved; // Use isApproved instead of status
+                    const badgeClass = statusIsActive ? 'status-badge active' : 'status-badge pending';
+                    const statusText = statusIsActive ? 'Aktif' : 'Menunggu';
+                    
+                    const row = `
+                        <tr>
+                            <td style="font-weight: 500;">${name}</td>
+                            <td style="color: #64748b;">${location}</td>
+                            <td><span class="${badgeClass}">${statusText}</span></td>
+                        </tr>
+                    `;
+                    memberListBodyEl.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error("Ralat senarai ahli:", error);
+            }
+        };
+
+        // --- FUNGSI 7: Pengumuman ---
+        const fetchAndRenderAnnouncements = async () => {
+             try {
+                const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(3));
+                const announcementSnapshot = await getDocs(q);
+                
+                let htmlContent = '';
+
+                if (announcementSnapshot.empty) {
+                    htmlContent = `<div style="text-align: center; padding: 1rem;"><i class="ph ph-tray" style="font-size: 2rem; color: #cbd5e1;"></i><p style="color: #64748b; margin-top: 5px;">Tiada pengumuman.</p></div>`;
+                } else {
+                    announcementSnapshot.forEach((doc) => {
+                        const announcement = doc.data();
+                        
+                        let dateText = '';
+                        if (announcement.createdAt && announcement.createdAt.toDate) {
+                            dateText = announcement.createdAt.toDate().toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' });
+                        }
+
+                        const styleClass = announcement.isPrimary ? 'announcement-primary' : '';
+                        const icon = announcement.isPrimary ? 'ph-megaphone' : 'ph-info';
+
+                        htmlContent += `
+                            <div class="announcement-item ${styleClass}">
+                                <div style="display: flex; gap: 10px; align-items: start;">
+                                    <i class="ph ${icon}" style="margin-top: 2px; color: var(--accent);"></i>
+                                    <div>
+                                        <p style="font-weight: 600; font-size: 0.9rem; margin-bottom: 2px;">${announcement.title || 'Tiada Tajuk'}</p>
+                                        <p style="font-size: 0.8rem; color: #64748b; line-height: 1.4;">
+                                            ${announcement.content || ''}
+                                        </p>
+                                        <span style="font-size: 0.7rem; color: #94a3b8; display: block; margin-top: 5px;">${dateText}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                announcementListEl.innerHTML = htmlContent;
+
+            } catch (error) {
+                console.error("Ralat pengumuman:", error);
+            }
+        };
+
+        // --- FUNGSI 8 (BARU): Senarai Pendapatan Terkini ---
+        const fetchAndRenderRecentIncome = async () => {
+            try {
+                const q = query(collection(db, "income"), orderBy("date", "desc"), limit(5));
+                const querySnapshot = await getDocs(q);
+
+                let htmlContent = '';
+
+                if (querySnapshot.empty) {
+                    htmlContent = `<div style="text-align: center; padding: 1rem;"><i class="ph ph-arrow-circle-down" style="font-size: 2rem; color: #cbd5e1;"></i><p style="color: #64748b; margin-top: 5px;">Tiada pendapatan direkodkan.</p></div>`;
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const income = doc.data();
+                        
+                        let dateText = '';
+                        if (income.date && income.date.toDate) {
+                            dateText = income.date.toDate().toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+                        }
+
+                        let sourceIcon = 'ph-receipt';
+                        switch(income.source) {
+                            case 'derma': sourceIcon = 'ph-heart'; break;
+                            case 'keuntungan_acara': sourceIcon = 'ph-calendar-star'; break;
+                            case 'sewa': sourceIcon = 'ph-storefront'; break;
+                            case 'denda': sourceIcon = 'ph-warning-circle'; break;
+                        }
+
+                        htmlContent += `
+                            <div class="income-item">
+                                <div class="item-info">
+                                    <div style="display: flex; gap: 10px; align-items: start;">
+                                        <i class="ph ${sourceIcon}" style="margin-top: 2px; color: var(--success);"></i>
+                                        <div>
+                                            <p style="font-weight: 600; font-size: 0.9rem; margin-bottom: 2px;">${income.description || 'Tiada Penerangan'}</p>
+                                            <p style="font-size: 0.8rem; color: #64748b; text-transform: capitalize;">${income.source ? income.source.replace('_', ' ') : 'Lain-lain'}</p>
+                                            <span style="font-size: 0.7rem; color: #94a3b8; display: block; margin-top: 5px;">${dateText}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="item-amount">${formatCurrency(income.amount || 0)}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                recentIncomeListEl.innerHTML = htmlContent;
+
+            } catch (error) {
+                console.error("Ralat pendapatan terkini:", error);
+            }
+        };
+
+        // --- FUNGSI 9: Senarai Perbelanjaan Terkini ---
+        const fetchAndRenderRecentExpenses = async () => {
+            try {
+                const q = query(collection(db, "expenses"), orderBy("date", "desc"), limit(5));
+                const querySnapshot = await getDocs(q);
+
+                let htmlContent = '';
+
+                if (querySnapshot.empty) {
+                    htmlContent = `<div style="text-align: center; padding: 1rem;"><i class="ph ph-arrow-circle-up" style="font-size: 2rem; color: #cbd5e1;"></i><p style="color: #64748b; margin-top: 5px;">Tiada perbelanjaan direkodkan.</p></div>`;
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const expense = doc.data();
+                        
+                        let dateText = '';
+                        if (expense.date && expense.date.toDate) {
+                            dateText = expense.date.toDate().toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+                        }
+
+                        let categoryIcon = 'ph-receipt';
+                        switch(expense.category) {
+                            case 'penyelenggaraan': categoryIcon = 'ph-wrench'; break;
+                            case 'utiliti': categoryIcon = 'ph-lightbulb'; break;
+                            case 'acara': categoryIcon = 'ph-calendar-star'; break;
+                            case 'keselamatan': categoryIcon = 'ph-shield-check'; break;
+                        }
+
+                        htmlContent += `
+                            <div class="expense-item">
+                                <div class="item-info">
+                                    <div style="display: flex; gap: 10px; align-items: start;">
+                                        <i class="ph ${categoryIcon}" style="margin-top: 2px; color: var(--warning);"></i>
+                                        <div>
+                                            <p style="font-weight: 600; font-size: 0.9rem; margin-bottom: 2px;">${expense.description || 'Tiada Penerangan'}</p>
+                                            <p style="font-size: 0.8rem; color: #64748b; text-transform: capitalize;">${expense.category ? expense.category.replace('_', ' ') : 'Lain-lain'}</p>
+                                            <span style="font-size: 0.7rem; color: #94a3b8; display: block; margin-top: 5px;">${dateText}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="item-amount">${formatCurrency(expense.amount || 0)}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                recentExpensesListEl.innerHTML = htmlContent;
+
+            } catch (error) {
+                console.error("Ralat perbelanjaan terkini:", error);
+            }
+        };
+
+        // --- FUNGSI 10 (BARU): Senarai Ahli Menunggu Kelulusan ---
+        const fetchAndRenderPendingMembers = async () => {
+            try {
+                const q = query(collection(db, "users"), where("isApproved", "==", false), orderBy("joinedAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                let htmlContent = '';
+                let pendingCount = 0;
+
+                if (querySnapshot.empty) {
+                    htmlContent = `<p style="text-align: center; color: #64748b; font-size: 0.9rem;">Tiada ahli menunggu kelulusan.</p>`;
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const member = doc.data();
+                        pendingCount++;
+                        
+                        let joinedDate = 'Tiada data';
+                        if (member.joinedAt && member.joinedAt.toDate) {
+                            joinedDate = member.joinedAt.toDate().toLocaleDateString('ms-MY');
+                        }
+                        
+                        htmlContent += `
+                            <div class="pending-member-item">
+                                <div class="pending-member-info">
+                                    <div class="pending-member-name">${member.fullName || 'Nama Tidak Diketahui'}</div>
+                                    <div class="pending-member-details">
+                                        ${member.email || 'Tiada emel'} • ${member.phone || 'Tiada telefon'}<br>
+                                        Daftar pada: ${joinedDate}
+                                    </div>
+                                </div>
+                                <div class="pending-member-actions">
+                                    <button class="btn btn-success btn-sm" onclick="approveMember('${doc.id}')">
+                                        <i class="ph ph-check"></i> Lulus
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="rejectMember('${doc.id}')">
+                                        <i class="ph ph-x"></i> Tolak
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                pendingMembersListEl.innerHTML = htmlContent;
+                pendingCountEl.textContent = `${pendingCount} Menunggu`;
+
+            } catch (error) {
+                console.error("Ralat memuatkan ahli menunggu kelulusan:", error);
+                pendingMembersListEl.innerHTML = `<p style="text-align: center; color: #ef4444; font-size: 0.9rem;">Ralat memuatkan data.</p>`;
+            }
+        };
+
+        // --- FUNGSI 11 (BARU): Luluskan Ahli ---
+        const approveMember = async (userId) => {
+            try {
+                showLoading();
+                
+                // Update user document to set isApproved to true
+                const userRef = doc(db, "users", userId);
+                await updateDoc(userRef, {
+                    isApproved: true,
+                    approvedAt: serverTimestamp(),
+                    approvedBy: auth.currentUser.uid
+                });
+                
+                // Refresh the pending members list
+                await fetchAndRenderPendingMembers();
+                
+                // Also refresh the main member list
+                await fetchAndRenderMemberList();
+                
+                hideLoading();
+                showToast('Ahli berjaya diluluskan!', 'success');
+                
+            } catch (error) {
+                console.error("Ralat meluluskan ahli:", error);
+                hideLoading();
+                showToast('Ralat meluluskan ahli. Sila cuba lagi.', 'error');
+            }
+        };
+
+        // --- FUNGSI 12 (BARU): Tolak Ahli ---
+        const rejectMember = async (userId) => {
+            if (confirm('Adakah anda pasti ingin menolak permohonan ahli ini? Tindakan ini tidak boleh dibatalkan.')) {
+                try {
+                    showLoading();
+                    
+                    // Update user document to set isApproved to false and add rejection info
+                    const userRef = doc(db, "users", userId);
+                    await updateDoc(userRef, {
+                        isApproved: false,
+                        isRejected: true,
+                        rejectedAt: serverTimestamp(),
+                        rejectedBy: auth.currentUser.uid
+                    });
+                    
+                    // Refresh the pending members list
+                    await fetchAndRenderPendingMembers();
+                    
+                    hideLoading();
+                    showToast('Permohonan ahli telah ditolak.', 'success');
+                    
+                } catch (error) {
+                    console.error("Ralat menolak ahli:", error);
+                    hideLoading();
+                    showToast('Ralat menolak ahli. Sila cuba lagi.', 'error');
+                }
+            }
+        };
+
+        // Make functions globally accessible for onclick handlers
+        window.approveMember = approveMember;
+        window.rejectMember = rejectMember;
+
+        // --- FUNGSI 13 (BARU): Tambah Pendapatan Baru ---
+        const addIncome = async (incomeData) => {
+            try {
+                showLoading();
+                
+                await addDoc(collection(db, "income"), {
+                    ...incomeData,
+                    date: new Date(incomeData.date),
+                    createdAt: serverTimestamp(),
+                    createdBy: auth.currentUser.uid
+                });
+                
+                incomeFormEl.reset();
+                incomeModalEl.classList.remove('active');
+                
+                // Refresh data
+                await Promise.all([
+                    fetchTotalFunds(),
+                    calculateNetBalance(),
+                    fetchAndRenderRecentIncome()
+                ]);
+                
+                hideLoading();
+                // PWA: Ganti alert dengan showToast
+                showToast('Pendapatan berjaya ditambah!', 'success');
+                
+            } catch (error) {
+                console.error("Ralat menambah pendapatan:", error);
+                hideLoading();
+                // PWA: Ganti alert dengan showToast
+                showToast('Ralat menambah pendapatan. Sila cuba lagi.', 'error');
+            }
+        };
+
+        // --- FUNGSI 14: Tambah Perbelanjaan Baru ---
+        const addExpense = async (expenseData) => {
+            try {
+                showLoading();
+                
+                await addDoc(collection(db, "expenses"), {
+                    ...expenseData,
+                    date: new Date(expenseData.date),
+                    createdAt: serverTimestamp(),
+                    createdBy: auth.currentUser.uid
+                });
+                
+                expenseFormEl.reset();
+                expenseModalEl.classList.remove('active');
+                
+                // Refresh data
+                await Promise.all([
+                    fetchTotalExpenses(),
+                    calculateNetBalance(),
+                    fetchAndRenderRecentExpenses()
+                ]);
+                
+                hideLoading();
+                // PWA: Ganti alert dengan showToast
+                showToast('Perbelanjaan berjaya ditambah!', 'success');
+                
+            } catch (error) {
+                console.error("Ralat menambah perbelanjaan:", error);
+                hideLoading();
+                // PWA: Ganti alert dengan showToast
+                showToast('Ralat menambah perbelanjaan. Sila cuba lagi.', 'error');
+            }
+        };
+
+        // PWA: Fungsi untuk refresh semua data dashboard
+        const refreshAllDashboardData = async () => {
+            // Putar ikon butang refresh
+            const icon = refreshDataBtn.querySelector('i');
+            icon.style.animation = 'spin 1s linear';
+            refreshDataBtn.disabled = true;
+
+            try {
+                await Promise.all([
+                    fetchLoggedInMemberData(auth.currentUser.uid),
+                    fetchTotalMembers(),
+                    fetchTotalFunds(),
+                    fetchTotalExpenses(),
+                    calculateNetBalance(),
+                    fetchAndRenderMemberList(), 
+                    fetchAndRenderAnnouncements(),
+                    fetchAndRenderRecentIncome(),
+                    fetchAndRenderRecentExpenses(),
+                    fetchAndRenderPendingMembers() // Add this to refresh pending members
+                ]);
+                showToast('Data telah dikemas kini!', 'success');
+            } catch (error) {
+                console.error("Ralat mengemas kini data:", error);
+                showToast('Gagal mengemas kini data.', 'error');
+            } finally {
+                // Hentikan putaran ikon dan aktifkan semula butang
+                icon.style.animation = '';
+                refreshDataBtn.disabled = false;
+            }
+        };
+
+        // Event Listeners
+        logoutBtn.addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                window.location.href = "index.html";
+            }).catch((error) => {
+                console.error("Ralat log keluar:", error);
+                hideLoading();
+            });
+        });
+
+        // PWA: Event listener untuk butang refresh
+        refreshDataBtn.addEventListener('click', refreshAllDashboardData);
+
+        // Modal Event Listeners - Income
+        addIncomeBtnEl.addEventListener('click', () => {
+            document.getElementById('incomeDate').valueAsDate = new Date();
+            incomeModalEl.classList.add('active');
+        });
+
+        closeIncomeModalEl.addEventListener('click', () => {
+            incomeModalEl.classList.remove('active');
+        });
+
+        cancelIncomeEl.addEventListener('click', () => {
+            incomeModalEl.classList.remove('active');
+        });
+
+        incomeFormEl.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const incomeData = {
+                source: document.getElementById('incomeSource').value,
+                description: document.getElementById('incomeDescription').value,
+                amount: parseFloat(document.getElementById('incomeAmount').value),
+                date: document.getElementById('incomeDate').value,
+                receipt: document.getElementById('incomeReceipt').value
+            };
+            
+            addIncome(incomeData);
+        });
+
+        // Modal Event Listeners - Expense
+        addExpenseBtnEl.addEventListener('click', () => {
+            document.getElementById('expenseDate').valueAsDate = new Date();
+            expenseModalEl.classList.add('active');
+        });
+
+        closeExpenseModalEl.addEventListener('click', () => {
+            expenseModalEl.classList.remove('active');
+        });
+
+        cancelExpenseEl.addEventListener('click', () => {
+            expenseModalEl.classList.remove('active');
+        });
+
+        expenseFormEl.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const expenseData = {
+                category: document.getElementById('expenseCategory').value,
+                description: document.getElementById('expenseDescription').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                date: document.getElementById('expenseDate').value,
+                receipt: document.getElementById('expenseReceipt').value
+            };
+            
+            addExpense(expenseData);
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === incomeModalEl) {
+                incomeModalEl.classList.remove('active');
+            }
+            if (e.target === expenseModalEl) {
+                expenseModalEl.classList.remove('active');
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                showLoading();
+                
+                // Load all data in parallel for ALL users
+                Promise.all([
+                    fetchLoggedInMemberData(user.uid),
+                    fetchTotalMembers(),
+                    fetchTotalFunds(),
+                    fetchTotalExpenses(),
+                    calculateNetBalance(),
+                    fetchAndRenderMemberList(), 
+                    fetchAndRenderAnnouncements(),
+                    fetchAndRenderRecentIncome(), // Safe to call, will only render if admin
+                    fetchAndRenderRecentExpenses(), // Safe to call, will only render if admin
+                    fetchAndRenderPendingMembers() // Safe to call, will only render if admin
+                ]).then(() => {
+                    hideLoading();
+                }).catch((error) => {
+                    console.error("Ralat memuatkan data:", error);
+                    hideLoading();
+                });
+            } else {
+                window.location.href = "index.html"; 
+            }
+        });
+
+        // PWA: Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

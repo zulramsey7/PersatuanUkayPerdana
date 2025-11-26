@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Urus Ahli - Panel Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%;
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* --- WELCOME BANNER --- */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), #1e293b);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+
+        /* --- CARD --- */
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 2rem;
+        }
+
+        .card h3 { 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            font-weight: 700; 
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- SEARCH AND FILTER --- */
+        .search-filter-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .filter-select {
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* --- TABLE --- */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin-bottom: 1rem;
+        }
+        
+        .member-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        
+        .member-table th { 
+            text-align: left; 
+            padding: 12px; 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            border-bottom: 1px solid #e2e8f0; 
+        }
+        
+        .member-table td { 
+            padding: 16px 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 0.95rem; 
+        }
+        
+        /* --- BADGES --- */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-badge.active { 
+            background: #dcfce7; 
+            color: #166534; 
+        }
+        
+        .status-badge.inactive { 
+            background: #fee2e2; 
+            color: #991b1b; 
+        }
+
+        .role-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: var(--text-muted);
+        }
+
+        .role-badge.admin {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* --- MODAL --- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #e2e8f0;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-cancel:hover {
+            background: var(--bg-body);
+        }
+
+        /* --- PAGINATION --- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover {
+            background: var(--bg-body);
+        }
+
+        .pagination button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- TOAST NOTIFICATION --- */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--accent);
+        }
+
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 70px;
+                width: 100%;
+            }
+            
+            .search-filter-container {
+                flex-direction: column;
+            }
+            
+            .welcome-banner h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>KOMUNITI<br><small style="font-size: 0.7rem; opacity: 0.7;">TAMAN HARMONI</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="#" class="active"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn" style="margin-top: auto; background: none; border: none; color: #94a3b8; padding: 12px; text-align: left; border-radius: 8px; cursor: pointer; transition: var(--transition);">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2>Urus Ahli</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Pengurusan maklumat ahli komuniti.</p>
+            </div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                </div>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div class="welcome-banner">
+                <h1>Urus Ahli Komuniti</h1>
+                <p style="opacity: 0.9; max-width: 600px;">Kemaskini maklumat ahli, tukar status, dan urus peranan pengguna.</p>
+                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+                    <i class="ph ph-wrench"></i>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class="ph ph-users"></i>
+                    Senarai Ahli
+                </h3>
+
+                <!-- Search and Filter -->
+                <div class="search-filter-container">
+                    <div class="search-box">
+                        <i class="ph ph-magnifying-glass"></i>
+                        <input type="text" id="searchInput" placeholder="Cari nama atau emel...">
+                    </div>
+                    <select class="filter-select" id="statusFilter">
+                        <option value="">Semua Status</option>
+                        <option value="aktif">Aktif</option>
+                        <option value="tidak aktif">Tidak Aktif</option>
+                    </select>
+                    <select class="filter-select" id="roleFilter">
+                        <option value="">Semua Peranan</option>
+                        <option value="admin">Admin</option>
+                        <option value="member">Ahli</option>
+                    </select>
+                    <button class="btn btn-primary" id="refreshBtn">
+                        <i class="ph ph-arrow-clockwise"></i>
+                        Segar Semula
+                    </button>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="member-table">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Emel</th>
+                                <th>No. Telefon</th>
+                                <th>Alamat</th>
+                                <th>Jawatan</th>
+                                <th>Status</th>
+                                <th>Peranan</th>
+                                <th>Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTable">
+                            <tr><td colspan="8" style="text-align: center;">Memuatkan data ahli...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination">
+                    <button id="prevBtn" disabled><i class="ph ph-arrow-left"></i></button>
+                    <div id="pageNumbers"></div>
+                    <button id="nextBtn"><i class="ph ph-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Member Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Kemaskini Maklumat Ahli</h3>
+                <button class="modal-close" id="closeEditModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="editFullName">Nama Penuh</label>
+                    <input type="text" id="editFullName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEmail">Emel</label>
+                    <input type="email" id="editEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPhone">No. Telefon</label>
+                    <input type="tel" id="editPhone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editHouseNumber">No. Rumah</label>
+                    <input type="text" id="editHouseNumber" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editStreetName">Nama Jalan/Lorong</label>
+                    <input type="text" id="editStreetName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editMemberRank">Jawatan/Pangkat</label>
+                    <select id="editMemberRank" required>
+                        <option value="Pengerusi">Pengerusi</option>
+                        <option value="Naib Pengerusi">Naib Pengerusi</option>
+                        <option value="Setiausaha">Setiausaha</option>
+                        <option value="Bendahari">Bendahari</option>
+                        <option value="Ahli Jawatankuasa">Ahli Jawatankuasa</option>
+                        <option value="Ahli Biasa">Ahli Biasa</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editStatus">Status Keahlian</label>
+                    <select id="editStatus" required>
+                        <option value="aktif">Aktif</option>
+                        <option value="tidak aktif">Tidak Aktif</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editRole">Peranan Sistem</label>
+                    <select id="editRole" required>
+                        <option value="member">Ahli</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelEdit">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-check"></i>
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div class="modal" id="createAccountModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cipta Akaun Log Masuk</h3>
+                <button class="modal-close" id="closeCreateAccountModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="createAccountForm">
+                <div class="form-group">
+                    <label for="createAccountEmail">Emel</label>
+                    <input type="email" id="createAccountEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="createAccountPassword">Kata Laluan</label>
+                    <input type="password" id="createAccountPassword" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="createAccountConfirmPassword">Sahkan Kata Laluan</label>
+                    <input type="password" id="createAccountConfirmPassword" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelCreateAccount">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-check"></i>
+                        Cipta Akaun
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div class="modal" id="resetPasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tetapkan Semula Kata Laluan</h3>
+                <button class="modal-close" id="closeResetPasswordModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="resetPasswordForm">
+                <div class="form-group">
+                    <label for="resetPasswordNew">Kata Laluan Baharu</label>
+                    <input type="password" id="resetPasswordNew" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="resetPasswordConfirm">Sahkan Kata Laluan Baharu</label>
+                    <input type="password" id="resetPasswordConfirm" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelResetPassword">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-key"></i>
+                        Tetapkan Semula
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="ph ph-info" id="toastIcon"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged, updatePassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, query, getDocs, orderBy, updateDoc, deleteDoc, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ID Elemen DOM
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        
+        // Table Elements
+        const membersTableEl = document.getElementById('membersTable');
+        
+        // Search and Filter Elements
+        const searchInputEl = document.getElementById('searchInput');
+        const statusFilterEl = document.getElementById('statusFilter');
+        const roleFilterEl = document.getElementById('roleFilter');
+        const refreshBtnEl = document.getElementById('refreshBtn');
+        
+        // Pagination Elements
+        const prevBtnEl = document.getElementById('prevBtn');
+        const nextBtnEl = document.getElementById('nextBtn');
+        const pageNumbersEl = document.getElementById('pageNumbers');
+        
+        // Modal Elements
+        const editModalEl = document.getElementById('editModal');
+        const createAccountModalEl = document.getElementById('createAccountModal');
+        const resetPasswordModalEl = document.getElementById('resetPasswordModal');
+        const editFormEl = document.getElementById('editForm');
+        const createAccountFormEl = document.getElementById('createAccountForm');
+        const resetPasswordFormEl = document.getElementById('resetPasswordForm');
+        
+        // Button Elements
+        const closeEditModalEl = document.getElementById('closeEditModal');
+        const closeCreateAccountModalEl = document.getElementById('closeCreateAccountModal');
+        const closeResetPasswordModalEl = document.getElementById('closeResetPasswordModal');
+        const cancelEditEl = document.getElementById('cancelEdit');
+        const cancelCreateAccountEl = document.getElementById('cancelCreateAccount');
+        const cancelResetPasswordEl = document.getElementById('cancelResetPassword');
+        
+        // Toast notification elements
+        const toastEl = document.getElementById('toast');
+        const toastMessageEl = document.getElementById('toastMessage');
+        const toastIconEl = document.getElementById('toastIcon');
+
+        // Current user data
+        let currentUser = null;
+        let currentUserData = null;
+        let currentMemberId = null;
+        
+        // Pagination variables
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let totalMembers = 0;
+        let allMembers = [];
+        let filteredMembers = [];
+
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // Show toast notification
+        const showToast = (message, type = 'info') => {
+            toastMessageEl.textContent = message;
+            
+            // Reset classes
+            toastEl.className = 'toast';
+            
+            // Set appropriate class and icon based on type
+            switch(type) {
+                case 'success':
+                    toastEl.classList.add('success');
+                    toastIconEl.className = 'ph ph-check-circle';
+                    break;
+                case 'error':
+                    toastEl.classList.add('error');
+                    toastIconEl.className = 'ph ph-warning-circle';
+                    break;
+                default:
+                    toastEl.classList.add('info');
+                    toastIconEl.className = 'ph ph-info';
+            }
+            
+            // Show toast
+            toastEl.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        };
+
+        // Toggle sidebar for mobile
+        sidebarToggleEl.addEventListener('click', () => {
+            sidebarEl.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebarEl.contains(e.target) && 
+                !sidebarToggleEl.contains(e.target) && 
+                sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+            }
+        });
+
+        // Format date
+        const formatDate = (date) => {
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(date).toLocaleDateString('ms-MY', options);
+        };
+
+        // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
+        const updateHeaderProfile = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid); 
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    const name = data.fullName || 'Admin';
+                    userNameEl.textContent = name;
+                    userRankEl.textContent = data.memberRank || 'Admin Sistem';
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+                    
+                    // Store user data
+                    currentUserData = data;
+                } else {
+                    userNameEl.textContent = 'Admin';
+                    userRankEl.textContent = 'Admin Sistem';
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan profil header:", error);
+                showToast("Ralat memuatkan profil.", "error");
+            }
+        };
+
+        // --- FUNGSI 2: MUATKAN DATA AHLI ---
+        const fetchMembers = async () => {
+            try {
+                showLoading();
+                
+                const q = query(
+                    collection(db, "users"),
+                    orderBy("fullName", "asc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    membersTableEl.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tiada ahli dijumpai.</td></tr>';
+                    hideLoading();
+                    return;
+                }
+                
+                allMembers = [];
+                querySnapshot.forEach((doc) => {
+                    const member = { ...doc.data(), id: doc.id };
+                    allMembers.push(member);
+                });
+                
+                // Apply current filters and render
+                applyFiltersAndRender();
+                
+                hideLoading();
+                
+            } catch (error) {
+                console.error("Ralat memuatkan data ahli:", error);
+                membersTableEl.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--danger);">Ralat memuatkan data ahli. Sila cuba lagi.</td></tr>';
+                showToast("Ralat memuatkan data ahli: " + error.message, "error");
+                hideLoading();
+            }
+        };
+
+        // --- FUNGSI 3: GUNA PENAPIS DAN PAPAR SEMULA ---
+        const applyFiltersAndRender = () => {
+            const searchTerm = searchInputEl.value.toLowerCase();
+            const statusFilter = statusFilterEl.value;
+            const roleFilter = roleFilterEl.value;
+            
+            // Filter members based on search and filter criteria
+            filteredMembers = allMembers.filter(member => {
+                const matchesSearch = member.fullName && member.fullName.toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || member.status === statusFilter;
+                const matchesRole = !roleFilter || member.role === roleFilter;
+                
+                return matchesSearch && matchesStatus && matchesRole;
+            });
+            
+            totalMembers = filteredMembers.length;
+            
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedMembers = filteredMembers.slice(startIndex, endIndex);
+            
+            // Render table
+            membersTableEl.innerHTML = '';
+            
+            if (paginatedMembers.length === 0) {
+                membersTableEl.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tiada ahli yang sepadan dengan kriteria carian.</td></tr>';
+            } else {
+                paginatedMembers.forEach(member => {
+                    const statusClass = member.status && member.status.toLowerCase() === 'aktif' ? 'status-badge active' : 'status-badge inactive';
+                    const statusText = member.status && member.status.toLowerCase() === 'aktif' ? 'Aktif' : 'Tidak Aktif';
+                    
+                    const roleClass = member.role && member.role.toLowerCase() === 'admin' ? 'role-badge admin' : 'role-badge';
+                    const roleText = member.role && member.role.toLowerCase() === 'admin' ? 'Admin' : 'Ahli';
+                    
+                    const address = member.houseNumber && member.streetName 
+                        ? `${member.houseNumber}, ${member.streetName}` 
+                        : (member.houseNumber || member.streetName || 'Tiada');
+                    
+                    const row = `
+                        <tr>
+                            <td>${member.fullName || 'Tiada Nama'}</td>
+                            <td>${member.email || 'Tiada Emel'}</td>
+                            <td>${member.phone || 'Tiada Telefon'}</td>
+                            <td>${address}</td>
+                            <td>${member.memberRank || 'Ahli Biasa'}</td>
+                            <td><span class="${statusClass}">${statusText}</span></td>
+                            <td><span class="${roleClass}">${roleText}</span></td>
+                            <td>
+                                <button class="btn btn-outline" onclick="editMember('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                    <i class="ph ph-pencil"></i>
+                                </button>
+                                ${!member.hasLoginAccount ? 
+                                    `<button class="btn btn-success" onclick="createAccount('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                        <i class="ph ph-user-plus"></i>
+                                    </button>` : ''
+                                }
+                                <button class="btn btn-warning" onclick="resetPassword('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                    <i class="ph ph-key"></i>
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteMember('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    membersTableEl.innerHTML += row;
+                });
+            }
+            
+            // Render pagination
+            renderPagination(Math.ceil(filteredMembers.length / itemsPerPage));
+        };
+
+        // --- FUNGSI 4: PAPAR PAGINATION ---
+        const renderPagination = (totalPages) => {
+            // Update prev/next buttons
+            prevBtnEl.disabled = currentPage === 1;
+            nextBtnEl.disabled = currentPage === totalPages || totalPages === 0;
+            
+            // Generate page numbers
+            let pageNumbersHTML = '';
+            
+            if (totalPages <= 5) {
+                // Show all page numbers if total pages is 5 or less
+                for (let i = 1; i <= totalPages; i++) {
+                    pageNumbersHTML += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+            } else {
+                // Show first page, current page, and last page with ellipsis
+                pageNumbersHTML += `<button class="${1 === currentPage ? 'active' : ''}" data-page="1">1</button>`;
+                
+                if (currentPage > 3) {
+                    pageNumbersHTML += '<span>...</span>';
+                }
+                
+                // Show pages around current page
+                const startPage = Math.max(2, currentPage - 1);
+                const endPage = Math.min(totalPages - 1, currentPage + 1);
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    pageNumbersHTML += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                
+                if (currentPage < totalPages - 2) {
+                    pageNumbersHTML += '<span>...</span>';
+                }
+                
+                if (totalPages > 1) {
+                    pageNumbersHTML += `<button class="${totalPages === currentPage ? 'active' : ''}" data-page="${totalPages}">${totalPages}</button>`;
+                }
+            }
+            
+            pageNumbersEl.innerHTML = pageNumbersHTML;
+            
+            // Add event listeners to page number buttons
+            document.querySelectorAll('#pageNumbers button').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentPage = parseInt(button.getAttribute('data-page'));
+                    applyFiltersAndRender();
+                });
+            });
+        };
+
+        // --- FUNGSI 5: EDIT AHLI ---
+        window.editMember = async (memberId) => {
+            try {
+                showLoading();
+                
+                const docRef = doc(db, "users", memberId);
+                const docSnap = await getDoc(docRef);
+                
+                if (!docSnap.exists()) {
+                    showToast("Ahli tidak dijumpai.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                const member = docSnap.data();
+                currentMemberId = memberId;
+                
+                // Fill form with member data
+                document.getElementById('editFullName').value = member.fullName || '';
+                document.getElementById('editEmail').value = member.email || '';
+                document.getElementById('editPhone').value = member.phone || '';
+                document.getElementById('editHouseNumber').value = member.houseNumber || '';
+                document.getElementById('editStreetName').value = member.streetName || '';
+                document.getElementById('editMemberRank').value = member.memberRank || 'Ahli Biasa';
+                document.getElementById('editStatus').value = member.status || 'aktif';
+                document.getElementById('editRole').value = member.role || 'member';
+                
+                hideLoading();
+                editModalEl.classList.add('active');
+                
+            } catch (error) {
+                console.error("Ralat memuatkan data ahli:", error);
+                hideLoading();
+                showToast("Ralat memuatkan data ahli: " + error.message, "error");
+            }
+        };
+
+        // --- FUNGSI 6: SIMPAN PERUBAHAN AHLI ---
+        const saveMemberChanges = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const fullName = document.getElementById('editFullName').value.trim();
+                const email = document.getElementById('editEmail').value.trim();
+                const phone = document.getElementById('editPhone').value.trim();
+                const houseNumber = document.getElementById('editHouseNumber').value.trim();
+                const streetName = document.getElementById('editStreetName').value.trim();
+                const memberRank = document.getElementById('editMemberRank').value;
+                const status = document.getElementById('editStatus').value;
+                const role = document.getElementById('editRole').value;
+                
+                // Update member data in Firestore
+                const docRef = doc(db, "users", currentMemberId);
+                await updateDoc(docRef, {
+                    fullName,
+                    email,
+                    phone,
+                    houseNumber,
+                    streetName,
+                    memberRank,
+                    status,
+                    role,
+                    updatedAt: serverTimestamp()
+                });
+                
+                // Close modal and refresh data
+                editModalEl.classList.remove('active');
+                await fetchMembers();
+                
+                hideLoading();
+                showToast("Maklumat ahli berjaya dikemaskini!", "success");
+                
+            } catch (error) {
+                console.error("Ralat mengemaskini ahli:", error);
+                hideLoading();
+                showToast("Ralat mengemaskini ahli: " + error.message, "error");
+            }
+        };
+
+        // --- FUNGSI 7: CIPTA AKAUN ---
+        window.createAccount = async (memberId) => {
+            try {
+                showLoading();
+                
+                const docRef = doc(db, "users", memberId);
+                const docSnap = await getDoc(docRef);
+                
+                if (!docSnap.exists()) {
+                    showToast("Ahli tidak dijumpai.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                const member = docSnap.data();
+                currentMemberId = memberId;
+                
+                // Pre-fill form with member data
+                document.getElementById('createAccountEmail').value = member.email || '';
+                document.getElementById('createAccountPassword').value = '';
+                document.getElementById('createAccountConfirmPassword').value = '';
+                
+                hideLoading();
+                createAccountModalEl.classList.add('active');
+                
+            } catch (error) {
+                console.error("Ralat memuatkan data ahli:", error);
+                hideLoading();
+                showToast("Ralat memuatkan data ahli: " + error.message, "error");
+            }
+        };
+
+        // --- FUNGSI 8: HANTER CIPTA AKAUN ---
+        const submitCreateAccount = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const email = document.getElementById('createAccountEmail').value.trim();
+                const password = document.getElementById('createAccountPassword').value;
+                const confirmPassword = document.getElementById('createAccountConfirmPassword').value;
+                
+                // Validate passwords
+                if (password !== confirmPassword) {
+                    showToast("Kata laluan tidak sepadan.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showToast("Kata laluan mesti sekurang-kurangnya 6 aksara.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                // Create user account in Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                
+                // Update member data in Firestore
+                const docRef = doc(db, "users", currentMemberId);
+                await updateDoc(docRef, {
+                    uid: userCredential.user.uid,
+                    hasLoginAccount: true,
+                    updatedAt: serverTimestamp()
+                });
+                
+                // Close modal and refresh data
+                createAccountModalEl.classList.remove('active');
+                createAccountFormEl.reset();
+                await fetchMembers();
+                
+                hideLoading();
+                showToast("Akaun log masuk berjaya dicipta!", "success");
+                
+            } catch (error) {
+                console.error("Ralat mencipta akaun:", error);
+                hideLoading();
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    showToast("Emel ini telah digunakan. Sila gunakan emel lain.", "error");
+                } else {
+                    showToast("Ralat mencipta akaun: " + error.message, "error");
+                }
+            }
+        };
+
+        // --- FUNGSI 9: TETAPKAN SEMULA KATA LALUAN ---
+        window.resetPassword = async (memberId) => {
+            try {
+                showLoading();
+                
+                const docRef = doc(db, "users", memberId);
+                const docSnap = await getDoc(docRef);
+                
+                if (!docSnap.exists()) {
+                    showToast("Ahli tidak dijumpai.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                const member = docSnap.data();
+                currentMemberId = memberId;
+                
+                // Reset form
+                document.getElementById('resetPasswordNew').value = '';
+                document.getElementById('resetPasswordConfirm').value = '';
+                
+                hideLoading();
+                resetPasswordModalEl.classList.add('active');
+                
+            } catch (error) {
+                console.error("Ralat memuatkan data ahli:", error);
+                hideLoading();
+                showToast("Ralat memuatkan data ahli: " + error.message, "error");
+            }
+        };
+
+        // --- FUNGSI 10: HANTER TETAPKAN SEMULA KATA LALUAN ---
+        const submitResetPassword = async (e) => {
+            e.preventDefault();
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const newPassword = document.getElementById('resetPasswordNew').value;
+                const confirmPassword = document.getElementById('resetPasswordConfirm').value;
+                
+                // Validate passwords
+                if (newPassword !== confirmPassword) {
+                    showToast("Kata laluan tidak sepadan.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    showToast("Kata laluan mesti sekurang-kurangnya 6 aksara.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                // Get member data to get UID
+                const docRef = doc(db, "users", currentMemberId);
+                const docSnap = await getDoc(docRef);
+                
+                if (!docSnap.exists()) {
+                    showToast("Ahli tidak dijumpai.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                const member = docSnap.data();
+                
+                if (!member.hasLoginAccount || !member.uid) {
+                    showToast("Ahli ini tidak mempunyai akaun log masuk.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                // For simplicity, we'll use sendPasswordResetEmail instead of updatePassword
+                // This is more secure and doesn't require admin privileges
+                await sendPasswordResetEmail(auth, member.email);
+                
+                // Close modal
+                resetPasswordModalEl.classList.remove('active');
+                resetPasswordFormEl.reset();
+                
+                hideLoading();
+                showToast("Pautan tetapan semula kata laluan telah dihantar ke emel ahli.", "success");
+                
+            } catch (error) {
+                console.error("Ralat menetapkan semula kata laluan:", error);
+                hideLoading();
+                showToast("Ralat menetapkan semula kata laluan: " + error.message, "error");
+            }
+        };
+
+        // --- FUNGSI 11: PADAM AHLI ---
+        window.deleteMember = async (memberId) => {
+            if (!confirm("Adakah anda pasti ingin memadam ahli ini?")) {
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                // Get member data to check if user has login account
+                const docRef = doc(db, "users", memberId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const member = docSnap.data();
+                    
+                    // Update member data to mark as deleted instead of actually deleting
+                    // This is safer and maintains data integrity
+                    await updateDoc(docRef, {
+                        isDeleted: true,
+                        deletedAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                }
+                
+                // Refresh data
+                await fetchMembers();
+                
+                hideLoading();
+                showToast("Ahli berjaya dipadam.", "success");
+                
+            } catch (error) {
+                console.error("Ralat memadam ahli:", error);
+                hideLoading();
+                showToast("Ralat memadam ahli: " + error.message, "error");
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        
+        // Refresh button
+        refreshBtnEl.addEventListener('click', () => {
+            currentPage = 1;
+            fetchMembers();
+        });
+        
+        // Search and filter event listeners
+        searchInputEl.addEventListener('input', () => {
+            currentPage = 1; // Reset to first page when searching
+            applyFiltersAndRender();
+        });
+        
+        statusFilterEl.addEventListener('change', () => {
+            currentPage = 1; // Reset to first page when filtering
+            applyFiltersAndRender();
+        });
+        
+        roleFilterEl.addEventListener('change', () => {
+            currentPage = 1; // Reset to first page when filtering
+            applyFiltersAndRender();
+        });
+        
+        // Pagination event listeners
+        prevBtnEl.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                applyFiltersAndRender();
+            }
+        });
+        
+        nextBtnEl.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                applyFiltersAndRender();
+            }
+        });
+        
+        // Modal event listeners
+        closeEditModalEl.addEventListener('click', () => {
+            editModalEl.classList.remove('active');
+        });
+        
+        closeCreateAccountModalEl.addEventListener('click', () => {
+            createAccountModalEl.classList.remove('active');
+        });
+        
+        closeResetPasswordModalEl.addEventListener('click', () => {
+            resetPasswordModalEl.classList.remove('active');
+        });
+        
+        cancelEditEl.addEventListener('click', () => {
+            editModalEl.classList.remove('active');
+        });
+        
+        cancelCreateAccountEl.addEventListener('click', () => {
+            createAccountModalEl.classList.remove('active');
+        });
+        
+        cancelResetPasswordEl.addEventListener('click', () => {
+            resetPasswordModalEl.classList.remove('active');
+        });
+        
+        // Close modals when clicking outside
+        editModalEl.addEventListener('click', (e) => {
+            if (e.target === editModalEl) {
+                editModalEl.classList.remove('active');
+            }
+        });
+        
+        createAccountModalEl.addEventListener('click', (e) => {
+            if (e.target === createAccountModalEl) {
+                createAccountModalEl.classList.remove('active');
+            }
+        });
+        
+        resetPasswordModalEl.addEventListener('click', (e) => {
+            if (e.target === resetPasswordModalEl) {
+                resetPasswordModalEl.classList.remove('active');
+            }
+        });
+        
+        // Form submissions
+        editFormEl.addEventListener('submit', saveMemberChanges);
+        createAccountFormEl.addEventListener('submit', submitCreateAccount);
+        resetPasswordFormEl.addEventListener('submit', submitResetPassword);
+
+        // Event listener untuk Log Keluar
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                window.location.href = "index.html";
+            }).catch((error) => {
+                hideLoading();
+                console.error("Ralat log keluar:", error);
+                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+            });
+        });
+
+        // Auth State Change Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Pengguna log masuk
+                currentUser = user;
+                showLoading();
+                
+                // Load all data in parallel
+                Promise.all([
+                    updateHeaderProfile(user.uid),
+                    fetchMembers()
+                ]).then(() => {
+                    hideLoading();
+                }).catch((error) => {
+                    console.error("Ralat memuatkan data:", error);
+                    hideLoading();
+                    showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
+                });
+            } else {
+                // Pengguna log keluar, redirect ke halaman log masuk
+                window.location.href = "index.html";
+            }
+        });
+
+        // PWA: Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

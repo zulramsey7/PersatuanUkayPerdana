@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumen - Portal Komuniti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;      /* Dark Blue */
+            --accent: #2563eb;       /* Bright Blue */
+            --bg-body: #f1f5f9;      /* Light Grey */
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        /* --- ADMIN ONLY STYLES --- */
+        .admin-only {
+            display: none; /* Sembunyikan menu admin secara default */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .admin-badge {
+            background-color: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            text-transform: uppercase;
+            display: none;
+            vertical-align: middle;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%; /* Ensure full width relative to flex */
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* --- WELCOME BANNER --- */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), #1e293b);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+
+        /* --- DOCUMENT CARDS --- */
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 2rem;
+        }
+
+        .card h3 { 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            font-weight: 700; 
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tables & Lists */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin-bottom: 1rem;
+        }
+        
+        .member-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        
+        .member-table th { 
+            text-align: left; 
+            padding: 12px; 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            border-bottom: 1px solid #e2e8f0; 
+        }
+        
+        .member-table td { 
+            padding: 16px 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 0.95rem; 
+        }
+        
+        .document-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .document-icon {
+            width: 32px;
+            height: 32px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .document-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .document-link:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Document Categories */
+        .categories {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .category {
+            padding: 0.5rem 1rem;
+            background: #f1f5f9;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .category:hover {
+            background: #e2e8f0;
+        }
+
+        .category.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Document Upload Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .file-upload {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent);
+            background: #f1f5f9;
+        }
+
+        .file-upload i {
+            font-size: 2rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .file-upload p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .file-upload input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f1f5f9;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .file-info.active {
+            display: block;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #e2e8f0;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-cancel:hover {
+            background: var(--bg-body);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 70px; /* Space for toggle button */
+                width: 100%;
+            }
+            
+            .categories {
+                justify-content: center;
+            }
+            
+            .welcome-banner h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group admin-only" id="adminMenu">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="admin-kewangan.html"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="#" class="active"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2 id="pageTitle">Dokumen <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Pustaka dokumen rasmi komuniti.</p>
+            </div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                </div>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div class="welcome-banner">
+                <h1>Pustaka Dokumen</h1>
+                <p style="opacity: 0.9; max-width: 600px;">Akses dokumen rasmi, minit mesyuarat, dan panduan komuniti.</p>
+                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+                    <i class="ph ph-folder-open"></i>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-folder-simple"></i>
+                        Dokumen Rasmi
+                    </h3>
+                    <button class="btn btn-primary admin-only" id="uploadBtn">
+                        <i class="ph ph-upload"></i>
+                        Muat Naik Dokumen
+                    </button>
+                </div>
+                
+                <!-- Document Categories -->
+                <div class="categories">
+                    <div class="category active" data-category="all">Semua</div>
+                    <div class="category" data-category="perlembagaan">Perlembagaan</div>
+                    <div class="category" data-category="minit">Minit Mesyuarat</div>
+                    <div class="category" data-category="kewangan">Laporan Kewangan</div>
+                    <div class="category" data-category="panduan">Panduan</div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="member-table">
+                        <thead>
+                            <tr>
+                                <th>Nama Dokumen</th>
+                                <th>Kategori</th>
+                                <th>Tarikh Kemaskini</th>
+                                <th>Saiz</th>
+                                <th>Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documentsTable">
+                            <tr><td colspan="5" style="text-align: center;">Memuatkan dokumen...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p style="margin-top: 1.5rem; font-size: 0.9rem; color: #64748b;">*Hanya dokumen yang dibenarkan sahaja dipaparkan mengikut pangkat ahli.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Document Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Muat Naik Dokumen</h3>
+                <button class="modal-close" id="closeUploadModal">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="documentTitle">Nama Dokumen</label>
+                    <input type="text" id="documentTitle" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="documentCategory">Kategori</label>
+                    <select id="documentCategory" required>
+                        <option value="">Pilih kategori</option>
+                        <option value="perlembagaan">Perlembagaan</option>
+                        <option value="minit">Minit Mesyuarat</option>
+                        <option value="kewangan">Laporan Kewangan</option>
+                        <option value="panduan">Panduan</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="documentDescription">Penerangan</label>
+                    <textarea id="documentDescription" placeholder="Penerangan ringkas tentang dokumen..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Fail Dokumen</label>
+                    <div class="file-upload" id="fileUpload">
+                        <i class="ph ph-upload-simple"></i>
+                        <p>Klik atau seret fail ke sini</p>
+                        <input type="file" id="documentFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" required>
+                    </div>
+                    <div class="file-info" id="fileInfo">
+                        <p><strong>Nama fail:</strong> <span id="fileName"></span></p>
+                        <p><strong>Saiz:</strong> <span id="fileSize"></span></p>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelUpload">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-upload"></i>
+                        Muat Naik
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="ph ph-info" id="toastIcon"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, query, getDocs, orderBy, addDoc, deleteDoc, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // ID Elemen DOM
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        
+        // Document Elements
+        const documentsTableEl = document.getElementById('documentsTable');
+        const categoriesEl = document.querySelectorAll('.category');
+        const uploadBtnEl = document.getElementById('uploadBtn');
+        
+        // Modal Elements
+        const uploadModalEl = document.getElementById('uploadModal');
+        const uploadFormEl = document.getElementById('uploadForm');
+        const closeUploadModalEl = document.getElementById('closeUploadModal');
+        const cancelUploadEl = document.getElementById('cancelUpload');
+        const fileUploadEl = document.getElementById('fileUpload');
+        const documentFileEl = document.getElementById('documentFile');
+        const fileInfoEl = document.getElementById('fileInfo');
+        const fileNameEl = document.getElementById('fileName');
+        const fileSizeEl = document.getElementById('fileSize');
+        
+        // Elemen Admin
+        const adminMenuEl = document.getElementById('adminMenu');
+        const adminBadgeEl = document.getElementById('adminBadge');
+        
+        // Toast notification elements
+        const toastEl = document.getElementById('toast');
+        const toastMessageEl = document.getElementById('toastMessage');
+        const toastIconEl = document.getElementById('toastIcon');
+
+        // Current user data
+        let currentUser = null;
+        let currentUserData = null;
+        let currentCategory = 'all';
+        let selectedFile = null;
+
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // Show toast notification
+        const showToast = (message, type = 'info') => {
+            toastMessageEl.textContent = message;
+            
+            // Reset classes
+            toastEl.className = 'toast';
+            
+            // Set appropriate class and icon based on type
+            switch(type) {
+                case 'success':
+                    toastEl.classList.add('success');
+                    toastIconEl.className = 'ph ph-check-circle';
+                    break;
+                case 'error':
+                    toastEl.classList.add('error');
+                    toastIconEl.className = 'ph ph-warning-circle';
+                    break;
+                default:
+                    toastEl.classList.add('info');
+                    toastIconEl.className = 'ph ph-info';
+            }
+            
+            // Show toast
+            toastEl.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        };
+
+        // Toggle sidebar for mobile
+        sidebarToggleEl.addEventListener('click', () => {
+            sidebarEl.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebarEl.contains(e.target) && 
+                !sidebarToggleEl.contains(e.target) && 
+                sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+            }
+        });
+
+        // Format date
+        const formatDate = (date) => {
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(date).toLocaleDateString('ms-MY', options);
+        };
+
+        // Format file size
+        const formatFileSize = (bytes) => {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        };
+
+        // Get document icon based on file type
+        const getDocumentIcon = (fileType) => {
+            switch (fileType) {
+                case 'pdf':
+                    return '<i class="ph ph-file-pdf" style="color: #ef4444;"></i>';
+                case 'doc':
+                case 'docx':
+                    return '<i class="ph ph-file-doc" style="color: #2563eb;"></i>';
+                case 'xls':
+                case 'xlsx':
+                    return '<i class="ph ph-file-xls" style="color: #10b981;"></i>';
+                case 'ppt':
+                case 'pptx':
+                    return '<i class="ph ph-file-ppt" style="color: #f59e0b;"></i>';
+                default:
+                    return '<i class="ph ph-file-text"></i>';
+            }
+        };
+
+        // Get category name in Malay
+        const getCategoryName = (category) => {
+            switch (category) {
+                case 'perlembagaan':
+                    return 'Perlembagaan';
+                case 'minit':
+                    return 'Minit Mesyuarat';
+                case 'kewangan':
+                    return 'Laporan Kewangan';
+                case 'panduan':
+                    return 'Panduan';
+                default:
+                    return 'Lain-lain';
+            }
+        };
+
+        // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
+        const updateHeaderProfile = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid); 
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    if (data.role === 'admin') {
+                        adminMenuEl.style.display = 'block';
+                        adminBadgeEl.style.display = 'inline-block';
+                        uploadBtnEl.style.display = 'flex';
+                    } else {
+                        adminMenuEl.style.display = 'none';
+                        adminBadgeEl.style.display = 'none';
+                        uploadBtnEl.style.display = 'none';
+                    }
+                    
+                    const name = data.fullName || 'Ahli';
+                    userNameEl.textContent = name;
+                    userRankEl.textContent = data.memberRank || 'Ahli Biasa';
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+                    
+                    // Store user data
+                    currentUserData = data;
+                } else {
+                    userNameEl.textContent = 'Tetamu';
+                    userRankEl.textContent = 'Tidak Berdaftar';
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan profil header:", error);
+                showToast("Ralat memuatkan profil.", "error");
+            }
+        };
+
+        // --- FUNGSI 2: MUATKAN DOKUMEN ---
+        const fetchDocuments = async () => {
+            try {
+                let q;
+                
+                if (currentCategory === 'all') {
+                    q = query(
+                        collection(db, "documents"),
+                        orderBy("updatedAt", "desc")
+                    );
+                } else {
+                    q = query(
+                        collection(db, "documents"),
+                        where("category", "==", currentCategory),
+                        orderBy("updatedAt", "desc")
+                    );
+                }
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    documentsTableEl.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tiada dokumen dijumpai.</td></tr>';
+                    return;
+                }
+                
+                let htmlContent = '';
+                
+                querySnapshot.forEach((doc) => {
+                    const document = doc.data();
+                    const documentId = doc.id;
+                    
+                    // Format date
+                    const formattedDate = formatDate(document.updatedAt.toDate());
+                    
+                    // Get file extension
+                    const fileName = document.fileName || '';
+                    const fileExtension = fileName.split('.').pop().toLowerCase();
+                    
+                    htmlContent += `
+                        <tr>
+                            <td>
+                                <div class="document-name">
+                                    <div class="document-icon">
+                                        ${getDocumentIcon(fileExtension)}
+                                    </div>
+                                    <a href="${document.downloadUrl}" target="_blank" class="document-link">
+                                        ${document.title}
+                                    </a>
+                                </div>
+                            </td>
+                            <td>${getCategoryName(document.category)}</td>
+                            <td>${formattedDate}</td>
+                            <td>${formatFileSize(document.fileSize || 0)}</td>
+                            <td>
+                                <a href="${document.downloadUrl}" target="_blank" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                    <i class="ph ph-download"></i>
+                                    Muat Turun
+                                </a>
+                                <button class="btn btn-danger admin-only" onclick="deleteDocument('${documentId}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                documentsTableEl.innerHTML = htmlContent;
+                
+                // Show/hide admin buttons based on user role
+                const adminButtons = document.querySelectorAll('.admin-only');
+                adminButtons.forEach(button => {
+                    button.style.display = currentUserData && currentUserData.role === 'admin' ? 'inline-flex' : 'none';
+                });
+                
+            } catch (error) {
+                console.error("Ralat memuatkan dokumen:", error);
+                documentsTableEl.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Ralat memuatkan dokumen.</td></tr>';
+                showToast("Ralat memuatkan dokumen.", "error");
+            }
+        };
+
+        // --- FUNGSI 3: PADAM DOKUMEN ---
+        window.deleteDocument = async (documentId) => {
+            if (!confirm("Adakah anda pasti ingin memadam dokumen ini?")) {
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                // Delete document from Firestore
+                await deleteDoc(doc(db, "documents", documentId));
+                
+                // Refresh documents list
+                await fetchDocuments();
+                
+                hideLoading();
+                showToast("Dokumen berjaya dipadam.", "success");
+                
+            } catch (error) {
+                console.error("Ralat memadam dokumen:", error);
+                hideLoading();
+                showToast("Ralat memadam dokumen. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- FUNGSI 4: HANTAR BORANG MUAT NAIK ---
+        const submitUploadForm = async (e) => {
+            e.preventDefault();
+            
+            if (!selectedFile) {
+                showToast("Sila pilih fail untuk dimuat naik.", "error");
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                // Get form values
+                const title = document.getElementById('documentTitle').value.trim();
+                const category = document.getElementById('documentCategory').value;
+                const description = document.getElementById('documentDescription').value.trim();
+                
+                // Upload file to Firebase Storage
+                const storageRef = ref(db.storage, `documents/${Date.now()}_${selectedFile.name}`);
+                const uploadResult = await uploadBytes(storageRef, selectedFile);
+                
+                // Get download URL
+                const downloadUrl = await getDownloadURL(uploadResult.ref);
+                
+                // Add document to Firestore
+                await addDoc(collection(db, "documents"), {
+                    title: title,
+                    category: category,
+                    description: description,
+                    fileName: selectedFile.name,
+                    fileSize: selectedFile.size,
+                    downloadUrl: downloadUrl,
+                    storagePath: uploadResult.ref.fullPath,
+                    uploadedBy: currentUser.uid,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+                
+                // Close modal and reset form
+                uploadModalEl.classList.remove('active');
+                uploadFormEl.reset();
+                selectedFile = null;
+                fileInfoEl.classList.remove('active');
+                
+                // Refresh documents list
+                await fetchDocuments();
+                
+                hideLoading();
+                showToast("Dokumen berjaya dimuat naik.", "success");
+                
+            } catch (error) {
+                console.error("Ralat memuat naik dokumen:", error);
+                hideLoading();
+                showToast("Ralat memuat naik dokumen. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        
+        // Category filtering
+        categoriesEl.forEach(category => {
+            category.addEventListener('click', () => {
+                // Remove active class from all categories
+                categoriesEl.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked category
+                category.classList.add('active');
+                
+                // Update current category
+                currentCategory = category.getAttribute('data-category');
+                
+                // Fetch documents for selected category
+                fetchDocuments();
+            });
+        });
+        
+        // File upload
+        documentFileEl.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            
+            if (file) {
+                selectedFile = file;
+                fileNameEl.textContent = file.name;
+                fileSizeEl.textContent = formatFileSize(file.size);
+                fileInfoEl.classList.add('active');
+            } else {
+                selectedFile = null;
+                fileInfoEl.classList.remove('active');
+            }
+        });
+        
+        // Drag and drop
+        fileUploadEl.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadEl.style.borderColor = 'var(--accent)';
+            fileUploadEl.style.backgroundColor = '#f1f5f9';
+        });
+        
+        fileUploadEl.addEventListener('dragleave', () => {
+            fileUploadEl.style.borderColor = '#cbd5e1';
+            fileUploadEl.style.backgroundColor = '#f8fafc';
+        });
+        
+        fileUploadEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadEl.style.borderColor = '#cbd5e1';
+            fileUploadEl.style.backgroundColor = '#f8fafc';
+            
+            const file = e.dataTransfer.files[0];
+            
+            if (file) {
+                documentFileEl.files = e.dataTransfer.files;
+                selectedFile = file;
+                fileNameEl.textContent = file.name;
+                fileSizeEl.textContent = formatFileSize(file.size);
+                fileInfoEl.classList.add('active');
+            }
+        });
+        
+        // Modal event listeners
+        uploadBtnEl.addEventListener('click', () => {
+            uploadModalEl.classList.add('active');
+        });
+        
+        closeUploadModalEl.addEventListener('click', () => {
+            uploadModalEl.classList.remove('active');
+        });
+        
+        cancelUploadEl.addEventListener('click', () => {
+            uploadModalEl.classList.remove('active');
+        });
+        
+        // Close modal when clicking outside
+        uploadModalEl.addEventListener('click', (e) => {
+            if (e.target === uploadModalEl) {
+                uploadModalEl.classList.remove('active');
+            }
+        });
+        
+        // Form submission
+        uploadFormEl.addEventListener('submit', submitUploadForm);
+
+        // Event listener untuk Log Keluar
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                showToast("Anda telah berjaya log keluar.", "success");
+            }).catch((error) => {
+                hideLoading();
+                console.error("Ralat log keluar:", error);
+                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+            });
+        });
+
+        // Auth State Change Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Pengguna log masuk
+                currentUser = user;
+                showLoading();
+                
+                // Load all data in parallel
+                Promise.all([
+                    updateHeaderProfile(user.uid),
+                    fetchDocuments()
+                ]).then(() => {
+                    hideLoading();
+                }).catch((error) => {
+                    console.error("Ralat memuatkan data:", error);
+                    hideLoading();
+                    showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
+                });
+            } else {
+                // Pengguna log keluar, redirect ke halaman log masuk
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>

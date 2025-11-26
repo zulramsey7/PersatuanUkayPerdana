@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Pendaftaran Ahli Baru - Portal Komuniti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <link rel="stylesheet" href="register.css"> 
+    
+</head>
+<body>
+
+    <div class="register-card">
+        <div class="header">
+            <div class="logo-placeholder">
+                <i class="ph ph-user-plus" style="font-size: 2.5rem;"></i>
+            </div>
+            <h1>Daftar Ahli Baru</h1>
+            <p>Isi maklumat di bawah untuk menyertai persatuan.</p>
+        </div>
+
+        <div id="alert-box"></div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label>Nama Penuh</label>
+                <input type="text" id="fullName" placeholder="Ali bin Abu" required autocomplete="name">
+            </div>
+
+            <div class="form-group">
+                <label>Nombor Telefon</label>
+                <input type="tel" id="phone" placeholder="0123456789" required autocomplete="tel">
+                </div>
+
+            <div class="form-group">
+                <label>Alamat Emel</label>
+                <input type="email" id="email" placeholder="nama@contoh.com" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label>Kata Laluan</label>
+                <input type="password" id="password" placeholder="Minimum 6 aksara" required autocomplete="new-password">
+            </div>
+
+            <div class="form-group">
+                <label>Sahkan Kata Laluan</label>
+                <input type="password" id="confirmPassword" placeholder="Ulang kata laluan" required autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="btn-primary" id="regBtn">
+                <div class="spinner" id="loadingSpinner" style="display: none; width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite;"></div>
+                <span id="btnText">Daftar Sekarang</span>
+            </button>
+        </form>
+
+        <div class="login-link">
+            Sudah mempunyai akaun? <a href="index.html">Log Masuk di sini</a>
+        </div>
+    </div>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+    
+    <script type="module">
+        // Import auth dan db dari fail init anda
+        import { auth, db } from './firebase-init.js'; 
+        
+        // Import fungsi-fungsi khusus dari CDN
+        import { 
+            createUserWithEmailAndPassword, 
+            sendEmailVerification,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        // Import fungsi Firestore
+        import { 
+            doc, 
+            setDoc 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+
+        // DOM Elements
+        const regForm = document.getElementById('registerForm');
+        const alertBox = document.getElementById('alert-box');
+        const regBtn = document.getElementById('regBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('loadingSpinner');
+
+        // Fungsi untuk menunjukkan loading state
+        const setLoading = (isLoading) => {
+            if (isLoading) {
+                regBtn.disabled = true;
+                btnText.textContent = "Sedang mendaftar...";
+                spinner.style.display = "inline-block";
+                alertBox.style.display = "none";
+            } else {
+                regBtn.disabled = false;
+                btnText.textContent = "Daftar Sekarang";
+                spinner.style.display = "none";
+            }
+        };
+
+        // Fungsi Tunjuk Mesej
+        const showMessage = (msg, isError = true) => {
+            alertBox.textContent = msg;
+            alertBox.style.display = "block";
+            // Guna nilai CSS literal yang konsisten
+            alertBox.style.backgroundColor = isError ? "#fee2e2" : "#dcfce7";
+            alertBox.style.color = isError ? "#ef4444" : "#166534";
+            alertBox.style.border = isError ? "1px solid #fecaca" : "1px solid #bbf7d0";
+        };
+
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 1. Ambil Data dari Form
+            const fullName = document.getElementById('fullName').value.trim(); // Trim whitespace
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // 2. Validasi Password
+            if (password !== confirmPassword) {
+                showMessage("Kata laluan tidak sama!");
+                return;
+            }
+
+            // Firebase memerlukan minimum 6 aksara, validasi klien adalah 6.
+            if (password.length < 6) {
+                showMessage("Kata laluan mesti sekurang-kurangnya 6 aksara.");
+                return;
+            }
+
+            // 3. Proses Pendaftaran
+            setLoading(true);
+
+            try {
+                // A. Cipta User dalam Auth (Email & Password)
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // B. Simpan Maklumat Tambahan ke Database (Firestore)
+                await setDoc(doc(db, "users", user.uid), {
+                    fullName: fullName,
+                    phone: phone,
+                    email: email,
+                    role: "member", // Set default level sebagai ahli biasa
+                    isApproved: false, // Tambah status kelulusan (PENTING: default adalah false)
+                    joinedAt: new Date() // Simpan tarikh daftar
+                });
+
+                // C. Hantar Emel Pengesahan (FUNGSI KESELAMATAN)
+                await sendEmailVerification(user);
+
+                // D. Log keluar pengguna selepas pendaftaran
+                await signOut(auth);
+
+                // E. Paparkan mesej kejayaan dengan maklumat tentang kelulusan
+                showMessage("Pendaftaran berjaya! Akaun anda telah dicipta dan sedang menunggu kelulusan dari admin. Sila semak emel anda untuk pengesahan. Anda akan dimaklumkan apabila akaun diluluskan.", false);
+                
+                // F. Kosongkan borang
+                regForm.reset();
+                
+                // G. Enable semula butang
+                setLoading(false);
+
+            } catch (error) {
+                console.error(error);
+                setLoading(false);
+
+                if (error.code === 'auth/email-already-in-use') {
+                    showMessage("Emel ini telah didaftarkan oleh orang lain.");
+                } else if (error.code === 'auth/weak-password') {
+                     showMessage("Kata laluan terlalu lemah (Minimum 6 aksara).");
+                } else if (error.code === 'auth/invalid-email') {
+                    showMessage("Format emel tidak sah.");
+                } else {
+                    showMessage("Ralat pendaftaran. Sila cuba lagi.");
+                }
+            }
+        });
+
+        // PWA: Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+    
+    <style>
+        /* Tambah animasi spinner jika tiada dalam register.css */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>
