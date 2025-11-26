@@ -326,6 +326,21 @@
             color: var(--primary);
         }
 
+        /* Share Button - Tambahan */
+        .btn-share {
+            background-color: var(--success);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-share:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+        }
+
         /* Sections */
         .section {
             padding: 5rem 0;
@@ -776,7 +791,11 @@
             <p>Wadah perpaduan dan kebajikan untuk membina komuniti yang sejahtera dan saling membantu.</p>
             <div class="cta-buttons">
                 <a href="#membership" class="btn btn-primary">Pakej Keahlian</a>
-                <a href="#register" class="btn btn-secondary">Daftar Sekarang</a>
+                <a href="#register" class="btn btn-secondary" style="background-color: var(--danger); border-color: var(--danger);">Daftar Sekarang</a>
+                <button class="btn btn-share" id="shareBtn">
+                    <i class="ph ph-share-network"></i>
+                    Kongsi
+                </button>
             </div>
         </div>
     </section>
@@ -837,7 +856,11 @@
                 <h2>Daftar Sebagai Ahli</h2>
                 <p>Sertai kami hari ini dan menjadi sebahagian daripada komuniti yang dinamik dan saling membantu. Proses pendaftaran adalah mudah dan cepat.</p>
                 <div class="cta-buttons">
-                    <a href="register.html" class="btn btn-secondary" style="background-color: white; color: var(--primary);">Daftar Sekarang</a>
+                    <a href="register.html" class="btn btn-secondary" style="background-color: var(--danger); color: white; border-color: var(--danger);">Daftar Sekarang</a>
+                    <button class="btn btn-share" id="shareBtn2">
+                        <i class="ph ph-share-network"></i>
+                        Kongsi
+                    </button>
                 </div>
             </div>
         </div>
@@ -850,6 +873,12 @@
                 <div class="footer-column">
                     <h3>Persatuan Penduduk UKAY PERDANA</h3>
                     <p>Wadah perpaduan dan kebajikan untuk komuniti UKAY PERDANA.</p>
+                    <div style="margin-top: 1rem;">
+                        <button class="btn btn-share" id="shareBtn3" style="background-color: var(--bg-card); color: var(--text-main);">
+                            <i class="ph ph-share-network"></i>
+                            Kongsi Laman Ini
+                        </button>
+                    </div>
                 </div>
                 <div class="footer-column">
                     <h3>Pautan Pantas</h3>
@@ -955,6 +984,11 @@
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
         const navLinks = document.querySelector('.nav-links');
+        
+        // Share Buttons
+        const shareBtn = document.getElementById('shareBtn');
+        const shareBtn2 = document.getElementById('shareBtn2');
+        const shareBtn3 = document.getElementById('shareBtn3');
         
         // PWA Elements
         const loadingOverlayEl = document.getElementById('loadingOverlay');
@@ -1147,6 +1181,36 @@
                 }
             });
         });
+
+        // --- SHARE FUNCTIONALITY ---
+        const shareContent = {
+            title: 'Persatuan Penduduk UKAY PERDANA',
+            text: 'Sertai Persatuan Penduduk UKAY PERDANA - Wadah perpaduan dan kebajikan untuk membina komuniti yang sejahtera.',
+            url: window.location.href
+        };
+
+        const handleShare = async () => {
+            try {
+                // Check if Web Share API is supported
+                if (navigator.share) {
+                    await navigator.share(shareContent);
+                    showToast('Terima kasih kerana berkongsi!', 'success');
+                } else {
+                    // Fallback for browsers that don't support Web Share API
+                    // Copy link to clipboard
+                    await navigator.clipboard.writeText(shareContent.url);
+                    showToast('Pautan telah disalin ke papan klip!', 'success');
+                }
+            } catch (error) {
+                console.error('Error sharing:', error);
+                showToast('Ralat semasa berkongsi kandungan', 'error');
+            }
+        };
+
+        // Add event listeners to all share buttons
+        shareBtn.addEventListener('click', handleShare);
+        shareBtn2.addEventListener('click', handleShare);
+        shareBtn3.addEventListener('click', handleShare);
 
         // --- PWA: INSTALL PROMPT ---
         window.addEventListener('beforeinstallprompt', (e) => {
