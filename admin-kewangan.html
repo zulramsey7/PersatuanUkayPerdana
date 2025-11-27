@@ -2,7 +2,8 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA: Improved viewport meta tag for better zoom control -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     
     <!-- PWA: Meta Tags untuk PWA -->
     <meta name="theme-color" content="#0f172a">
@@ -17,6 +18,9 @@
     <title>Laporan Kewangan - Portal Komuniti</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script type="module" src="./firebase-init.js"></script> 
 
@@ -35,9 +39,24 @@
             --transition: all 0.3s ease;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif;
+            -webkit-text-size-adjust: 100%;
+            -moz-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
         
-        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            display: flex; 
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
 
         /* --- LOADING SPINNER --- */
         .loading-spinner {
@@ -140,11 +159,8 @@
             flex-direction: column;
             z-index: 100;
             transition: transform 0.3s ease;
-            /* PWA: Make sidebar scrollable on mobile */
             overflow-y: auto;
-            /* PWA: Enable smooth scrolling for touch devices */
             -webkit-overflow-scrolling: touch;
-            /* PWA: Add padding at bottom for better mobile experience */
             padding-bottom: 5rem;
         }
 
@@ -161,7 +177,6 @@
             padding: 10px;
             cursor: pointer;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            /* PWA: Add haptic feedback */
             -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
@@ -197,9 +212,7 @@
             border-radius: 8px;
             transition: var(--transition);
             font-size: 0.95rem;
-            /* PWA: Add touch feedback */
             -webkit-tap-highlight-color: rgba(255,255,255,0.1);
-            /* PWA: Add transform for better mobile interaction */
             transform: translateZ(0);
             position: relative;
         }
@@ -213,7 +226,7 @@
 
         /* --- ADMIN ONLY STYLES --- */
         .admin-only {
-            display: none; /* Sembunyikan menu admin secara default */
+            display: none;
         }
 
         .admin-badge {
@@ -239,7 +252,6 @@
             width: 100%;
             font-weight: 500;
             transition: var(--transition);
-            /* PWA: Add touch feedback */
             -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
@@ -251,6 +263,7 @@
             flex: 1;
             padding: 2rem;
             width: 100%;
+            max-width: 100%;
             transition: margin-left 0.3s ease;
         }
 
@@ -259,6 +272,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         header h2 { font-weight: 700; font-size: 1.5rem; }
@@ -271,6 +286,7 @@
             padding: 8px 16px;
             border-radius: 50px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            white-space: nowrap;
         }
 
         .avatar {
@@ -329,6 +345,8 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            flex: 1;
+            min-width: 200px;
         }
 
         .filter-group label {
@@ -344,6 +362,7 @@
             border-radius: 8px;
             font-size: 0.9rem;
             transition: border-color 0.3s;
+            width: 100%;
         }
 
         .filter-group input:focus,
@@ -369,6 +388,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            min-width: 0;
         }
 
         .stat-label {
@@ -381,6 +401,7 @@
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--text-main);
+            word-wrap: break-word;
         }
 
         .stat-trend {
@@ -400,11 +421,13 @@
             padding: 1.5rem;
             margin-bottom: 2rem;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: auto;
         }
 
         .data-table th {
@@ -414,12 +437,17 @@
             color: var(--text-muted);
             border-bottom: 2px solid #e2e8f0;
             background: #f8fafc;
+            white-space: nowrap;
         }
 
         .data-table td {
             padding: 16px 12px;
             border-bottom: 1px solid #f1f5f9;
             font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
         }
 
         /* --- BADGES --- */
@@ -458,6 +486,7 @@
             gap: 0.5rem;
             border: none;
             text-decoration: none;
+            white-space: nowrap;
         }
 
         .btn-primary {
@@ -497,67 +526,30 @@
 
         /* --- CHART CONTAINER --- */
         .chart-container {
-            height: 300px;
-            margin: 2rem 0;
-            background: var(--bg-card);
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #f1f5f9;
-            padding: 1.5rem;
-            position: relative;
-        }
-
-        .chart-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        /* --- TABLE CONTAINER --- */
-        .table-container {
             background: var(--bg-card);
             border-radius: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             border: 1px solid #f1f5f9;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            overflow-x: auto;
+            position: relative;
+            height: 400px; /* Set a fixed height for the chart container */
         }
-
+        
+        /* --- TABLE CONTAINER --- */
         .table-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .table-title {
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--text-main);
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table th {
-            text-align: left;
-            padding: 12px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            border-bottom: 2px solid #e2e8f0;
-            background: #f8fafc;
-        }
-
-        .data-table td {
-            padding: 16px 12px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 0.95rem;
         }
 
         /* --- PAGINATION --- */
@@ -596,8 +588,6 @@
         @media (max-width: 1024px) {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
             }
         }
 
@@ -605,9 +595,7 @@
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
-                /* PWA: Adjust height for mobile browsers */
                 height: 100vh;
-                /* PWA: Ensure safe area for notched phones */
                 padding-top: env(safe-area-inset-top, 1.5rem);
                 padding-bottom: env(safe-area-inset-bottom, 5rem);
             }
@@ -629,17 +617,15 @@
             
             .stats-grid {
                 grid-template-columns: 1fr;
-                gap: 1rem;
             }
             
             .table-header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 1rem;
             }
             
             .btn-group {
-                flex-direction: column;
+                width: 100%;
             }
             
             .btn {
@@ -650,11 +636,6 @@
 
         /* Small Mobile Responsive */
         @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-            }
-            
             .card {
                 padding: 1rem;
             }
@@ -700,33 +681,41 @@
             border-radius: 0 4px 4px 0;
         }
 
-        /* PWA: Add animation for menu items */
-        .menu li a::after {
-            content: '';
+        /* PWA: Bank balance card styles */
+        .bank-balance-card {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bank-balance-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .bank-balance-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .bank-balance-updated {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .bank-balance-icon {
             position: absolute;
-            bottom: 0;
-            left: 12px;
-            width: calc(100% - 24px);
-            height: 1px;
-            background-color: transparent;
-            transition: background-color 0.3s ease;
-        }
-
-        .menu li a:hover::after {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* PWA: Add animation for sidebar toggle button */
-        .sidebar-toggle {
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-toggle:hover {
-            transform: scale(1.05);
-        }
-
-        .sidebar-toggle:active {
-            transform: scale(0.95);
+            right: 20px;
+            bottom: -20px;
+            font-size: 8rem;
+            opacity: 0.1;
         }
     </style>
 </head>
@@ -819,6 +808,16 @@
                 <p style="opacity: 0.9; max-width: 600px;">Pantau aliran masuk dan keluar kewangan komuniti dengan lebih terperinci.</p>
                 <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
                     <i class="ph ph-money"></i>
+                </div>
+            </div>
+
+            <!-- Bank Balance Card -->
+            <div class="bank-balance-card" id="bankBalanceCard" style="display: none;">
+                <div class="bank-balance-label">Jumlah Wang di Bank</div>
+                <div class="bank-balance-value" id="bankBalanceValue">RM 0.00</div>
+                <div class="bank-balance-updated" id="bankBalanceUpdated">Dikemaskini: -</div>
+                <div class="bank-balance-icon">
+                    <i class="ph ph-bank"></i>
                 </div>
             </div>
 
@@ -932,27 +931,16 @@
 
             <!-- Chart Section -->
             <div class="chart-container">
-                <div class="chart-placeholder">
-                    <div>
-                        <i class="ph ph-chart-line" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                        <p>Graf Aliran Tunai</p>
-                        <small>Paparan akan tersedia tidak lama lagi</small>
-                    </div>
-                </div>
+                <h3 style="margin-bottom: 1.5rem; font-weight: 600;">Graf Aliran Tunai</h3>
+                <canvas id="cashFlowChart"></canvas>
             </div>
         </div>
     </main>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <i class="ph ph-info" id="toastIcon"></i>
-        <span id="toastMessage">Message</span>
-    </div>
-
     <script type="module">
         import { auth, db, signOutUser } from './firebase-init.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { doc, getDoc, collection, query, getDocs, orderBy, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { doc, getDoc, collection, query, getDocs, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ID Elemen DOM
         const userNameEl = document.getElementById('userName');
@@ -967,6 +955,11 @@
         const sidebarOverlayEl = document.getElementById('sidebarOverlay');
         const toastContainerEl = document.getElementById('toastContainer');
         const adminMenuEl = document.getElementById('adminMenu');
+        
+        // Bank Balance Elements
+        const bankBalanceCardEl = document.getElementById('bankBalanceCard');
+        const bankBalanceValueEl = document.getElementById('bankBalanceValue');
+        const bankBalanceUpdatedEl = document.getElementById('bankBalanceUpdated');
         
         // Filter Elements
         const reportTypeEl = document.getElementById('reportType');
@@ -991,11 +984,16 @@
         const refreshBtnEl = document.getElementById('refreshBtn');
         const downloadBtnEl = document.getElementById('downloadBtn');
 
+        // Chart.js instance
+        let cashFlowChart = null;
+
         // State Variables
         let currentUser = null;
         let currentUserData = null;
         let isAdmin = false;
         let reportData = [];
+        let bankBalance = 0;
+        let lastBankUpdate = null;
 
         // Show loading overlay
         const showLoading = () => {
@@ -1027,7 +1025,6 @@
             sidebarEl.classList.toggle('active');
             sidebarOverlayEl.classList.toggle('active');
             
-            // PWA: Add haptic feedback if supported
             if (window.navigator && window.navigator.vibrate) {
                 window.navigator.vibrate(50);
             }
@@ -1038,33 +1035,6 @@
             sidebarEl.classList.remove('active');
             sidebarOverlayEl.classList.remove('active');
         });
-
-        // PWA: Add swipe gesture support for sidebar
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        document.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-
-        document.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        });
-
-        const handleSwipe = () => {
-            // Swipe right to open sidebar
-            if (touchEndX - touchStartX > 50 && touchStartX < 50) {
-                sidebarEl.classList.add('active');
-                sidebarOverlayEl.classList.add('active');
-            }
-            
-            // Swipe left to close sidebar
-            if (touchStartX - touchEndX > 50 && sidebarEl.classList.contains('active')) {
-                sidebarEl.classList.remove('active');
-                sidebarOverlayEl.classList.remove('active');
-            }
-        };
 
         // Sidebar toggle event listener
         sidebarToggleEl.addEventListener('click', toggleSidebar);
@@ -1080,14 +1050,6 @@
             }
         });
 
-        // PWA: Handle window resize
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                sidebarEl.classList.remove('active');
-                sidebarOverlayEl.classList.remove('active');
-            }
-        });
-
         // Format currency
         const formatCurrency = (amount) => {
             return `RM ${parseFloat(amount).toFixed(2)}`;
@@ -1096,6 +1058,11 @@
         // Format date
         const formatDate = (date) => {
             return new Date(date).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+        };
+        
+        // Format month for chart
+        const formatMonth = (date) => {
+            return new Date(date).toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' });
         };
 
         // Get date range based on selection
@@ -1140,19 +1107,20 @@
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    const isAdmin = data.role === 'admin';
+                    isAdmin = data.role === 'admin';
                     
-                    // Show/hide admin elements based on role
                     if (isAdmin) {
                         adminMenuEl.style.display = 'block';
                         adminBadgeEl.style.display = 'inline-block';
                         welcomeTitleEl.textContent = 'Laporan Kewangan (Admin)';
                         pageTitleEl.textContent = 'Laporan Kewangan (Admin)';
+                        bankBalanceCardEl.style.display = 'block';
                     } else {
                         adminMenuEl.style.display = 'none';
                         adminBadgeEl.style.display = 'none';
                         welcomeTitleEl.textContent = 'Laporan Kewangan';
                         pageTitleEl.textContent = 'Laporan Kewangan';
+                        bankBalanceCardEl.style.display = 'none';
                     }
                     
                     const name = data.fullName || 'Pengguna';
@@ -1164,6 +1132,7 @@
                 } else {
                     userNameEl.textContent = 'Pengguna';
                     userRankEl.textContent = 'Ahli Biasa';
+                    bankBalanceCardEl.style.display = 'none';
                 }
             } catch (error) {
                 console.error("Ralat memuatkan profil header:", error);
@@ -1177,114 +1146,46 @@
                 showLoading();
                 
                 const { startDate, endDate } = getDateRange();
-                const reportType = reportTypeEl.value;
                 
-                // Reset data
                 reportData = [];
                 
                 if (isAdmin) {
-                    // Admin: Fetch all data
-                    const paymentsQuery = query(
-                        collection(db, "payments"),
-                        where("paymentDate", ">=", startDate),
-                        where("paymentDate", "<=", endDate),
-                        orderBy("paymentDate", "desc")
-                    );
+                    const paymentsQuery = query(collection(db, "payments"), where("paymentDate", ">=", startDate), where("paymentDate", "<=", endDate), orderBy("paymentDate", "desc"));
+                    const incomeQuery = query(collection(db, "income"), where("date", ">=", startDate), where("date", "<=", endDate), orderBy("date", "desc"));
+                    const expensesQuery = query(collection(db, "expenses"), where("date", ">=", startDate), where("date", "<=", endDate), orderBy("date", "desc"));
                     
-                    const incomeQuery = query(
-                        collection(db, "income"),
-                        where("date", ">=", startDate),
-                        where("date", "<=", endDate),
-                        orderBy("date", "desc")
-                    );
+                    const bankDocRef = doc(db, "financial", "bankBalance");
+                    const bankDocSnap = await getDoc(bankDocRef);
                     
-                    const expensesQuery = query(
-                        collection(db, "expenses"),
-                        where("date", ">=", startDate),
-                        where("date", "<=", endDate),
-                        orderBy("date", "desc")
-                    );
+                    if (bankDocSnap.exists()) {
+                        const bankData = bankDocSnap.data();
+                        bankBalance = bankData.amount || 0;
+                        lastBankUpdate = bankData.lastUpdated ? bankData.lastUpdated.toDate() : new Date();
+                        bankBalanceValueEl.textContent = formatCurrency(bankBalance);
+                        bankBalanceUpdatedEl.textContent = `Dikemaskini: ${formatDate(lastBankUpdate)}`;
+                    } else {
+                        bankBalanceValueEl.textContent = formatCurrency(0);
+                        bankBalanceUpdatedEl.textContent = 'Dikemaskini: -';
+                    }
                     
-                    const [paymentsSnapshot, incomeSnapshot, expensesSnapshot] = await Promise.all([
-                        getDocs(paymentsQuery),
-                        getDocs(incomeQuery),
-                        getDocs(expensesQuery)
-                    ]);
+                    const [paymentsSnapshot, incomeSnapshot, expensesSnapshot] = await Promise.all([getDocs(paymentsQuery), getDocs(incomeQuery), getDocs(expensesQuery)]);
                     
-                    // Add payments
-                    paymentsSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        reportData.push({
-                            date: data.paymentDate,
-                            description: data.description || 'Pembayaran',
-                            category: 'Pembayaran',
-                            amount: data.amount,
-                            type: 'payment',
-                            userName: data.userName || 'Unknown',
-                            userHouse: data.userHouse || 'Unknown'
-                        });
-                    });
-                    
-                    // Add income
-                    incomeSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        reportData.push({
-                            date: data.date,
-                            description: data.description || 'Pendapatan',
-                            category: data.category || 'Lain-lain',
-                            amount: data.amount,
-                            type: 'income',
-                            userName: 'Admin',
-                            userHouse: '-'
-                        });
-                    });
-                    
-                    // Add expenses
-                    expensesSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        reportData.push({
-                            date: data.date,
-                            description: data.description || 'Perbelanjaan',
-                            category: data.category || 'Lain-lain',
-                            amount: data.amount,
-                            type: 'expense',
-                            userName: 'Admin',
-                            userHouse: '-'
-                        });
-                    });
+                    paymentsSnapshot.forEach(doc => { const data = doc.data(); reportData.push({ date: data.paymentDate, description: data.description || 'Pembayaran', category: 'Pembayaran', amount: data.amount, type: 'payment', userName: data.userName || 'Unknown', userHouse: data.userHouse || 'Unknown' }); });
+                    incomeSnapshot.forEach(doc => { const data = doc.data(); reportData.push({ date: data.date, description: data.description || 'Pendapatan', category: data.category || 'Lain-lain', amount: data.amount, type: 'income', userName: 'Admin', userHouse: '-' }); });
+                    expensesSnapshot.forEach(doc => { const data = doc.data(); reportData.push({ date: data.date, description: data.description || 'Perbelanjaan', category: data.category || 'Lain-lain', amount: data.amount, type: 'expense', userName: 'Admin', userHouse: '-' }); });
                 } else {
-                    // Regular user: Fetch only their data
                     const userId = auth.currentUser.uid;
-                    
-                    const transactionsQuery = query(
-                        collection(db, "users", userId, "transactions"),
-                        where("date", ">=", startDate),
-                        where("date", "<=", endDate),
-                        orderBy("date", "desc")
-                    );
-                    
+                    const transactionsQuery = query(collection(db, "users", userId, "transactions"), where("date", ">=", startDate), where("date", "<=", endDate), orderBy("date", "desc"));
                     const transactionsSnapshot = await getDocs(transactionsQuery);
                     
-                    transactionsSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        reportData.push({
-                            date: data.date,
-                            description: data.description || 'Transaksi',
-                            category: data.category || 'Lain-lain',
-                            amount: data.amount,
-                            type: data.type || 'payment',
-                            userName: currentUserData.fullName || 'Saya',
-                            userHouse: currentUserData.houseNumber || '-'
-                        });
-                    });
+                    transactionsSnapshot.forEach(doc => { const data = doc.data(); reportData.push({ date: data.date, description: data.description || 'Transaksi', category: data.category || 'Lain-lain', amount: data.amount, type: data.type || 'payment', userName: currentUserData.fullName || 'Saya', userHouse: currentUserData.houseNumber || '-' }); });
                 }
                 
-                // Sort by date
                 reportData.sort((a, b) => b.date.toDate() - a.date.toDate());
                 
-                // Update table
                 updateTable();
                 updateStats();
+                updateChart(); // Update chart after fetching data
                 
                 hideLoading();
                 
@@ -1297,7 +1198,6 @@
 
         // --- FUNGSI 3: KEMASKINI JADUAL ---
         const updateTable = () => {
-            const tableTitleEl = document.getElementById('tableTitle');
             let tableHTML = '';
             
             if (reportData.length === 0) {
@@ -1309,111 +1209,148 @@
                     const statusClass = status === 'success' ? 'status-badge success' : 'status-badge failed';
                     const statusText = status === 'success' ? 'Berjaya' : 'Gagal';
                     
-                    tableHTML += `
-                        <tr>
-                            <td>${date}</td>
-                            <td>${item.description}</td>
-                            <td>${item.category}</td>
-                            <td>${formatCurrency(item.amount)}</td>
-                            <td><span class="${statusClass}">${statusText}</span></td>
-                            <td>${item.userName}</td>
-                        </tr>
-                    `;
+                    tableHTML += `<tr><td>${date}</td><td>${item.description}</td><td>${item.category}</td><td>${formatCurrency(item.amount)}</td><td><span class="${statusClass}">${statusText}</span></td><td>${item.userName}</td></tr>`;
                 });
             }
             
             reportTableBodyEl.innerHTML = tableHTML;
             
-            // Update table title
-            const reportTypeText = {
-                'overview': 'Ringkasan',
-                'detailed': 'Semua Transaksi',
-                'payments': 'Pembayaran',
-                'income': 'Pendapatan',
-                'expenses': 'Perbelanjaan'
-            };
-            
+            const reportTypeText = { 'overview': 'Ringkasan', 'detailed': 'Semua Transaksi', 'payments': 'Pembayaran', 'income': 'Pendapatan', 'expenses': 'Perbelanjaan' };
             tableTitleEl.textContent = reportTypeText[reportTypeEl.value] || 'Ringkasan';
         };
 
         // --- FUNGSI 4: KEMASKINI STATISTIK ---
         const updateStats = () => {
-            let totalIncome = 0;
-            let totalExpenses = 0;
-            let totalTransactions = reportData.length;
+            let totalIncome = 0, totalExpenses = 0;
             
             reportData.forEach(item => {
-                if (item.type === 'income') {
-                    totalIncome += item.amount;
-                } else if (item.type === 'expense') {
-                    totalExpenses += item.amount;
-                }
+                if (item.type === 'income') totalIncome += item.amount;
+                else if (item.type === 'expense') totalExpenses += item.amount;
             });
             
             const netBalance = totalIncome - totalExpenses;
             
-            // Update UI
             totalIncomeEl.textContent = formatCurrency(totalIncome);
             totalExpensesEl.textContent = formatCurrency(totalExpenses);
             netBalanceEl.textContent = formatCurrency(netBalance);
             
-            // Update trends
-            const incomeTrend = totalIncome > 0 ? '+12%' : '0%';
-            const expenseTrend = totalExpenses > 0 ? '+8%' : '0%';
-            const balanceTrend = netBalance > 0 ? 'Stabil' : netBalance < 0 ? 'Negatif' : 'Stabil';
+            incomeTrendEl.textContent = totalIncome > 0 ? '+12%' : '0%';
+            expenseTrendEl.textContent = totalExpenses > 0 ? '+8%' : '0%';
+            balanceTrendEl.textContent = netBalance > 0 ? 'Stabil' : netBalance < 0 ? 'Negatif' : 'Stabil';
             
-            incomeTrendEl.textContent = incomeTrend;
-            expenseTrendEl.textContent = expenseTrend;
-            balanceTrendEl.textContent = balanceTrend;
+            netBalanceEl.style.color = netBalance < 0 ? 'var(--danger)' : 'var(--text-main)';
             
-            // Update colors
-            netBalanceEl.className = netBalance < 0 ? 'stat-value text-danger' : 'stat-value';
-            
-            // Update transaction count
-            totalTransactionsEl.textContent = totalTransactions.toLocaleString();
-            transactionTrendEl.textContent = totalTransactions > 0 ? 'Naik' : 'Rekod';
-            
-            // Update trend colors
-            incomeTrendEl.className = totalIncome > 0 ? 'text-success' : 'text-muted';
-            expenseTrendEl.className = totalExpenses > 0 ? 'text-danger' : 'text-muted';
-            balanceTrendEl.className = netBalance < 0 ? 'text-danger' : 'text-success';
+            totalTransactionsEl.textContent = reportData.length.toLocaleString();
+            transactionTrendEl.textContent = reportData.length > 0 ? 'Naik' : 'Rekod';
         };
 
-        // --- FUNGSI 5: MUAT TURUN LAPORAN ---
+        // --- FUNGSI 5: KEMASKINI GRAF ALIRAN TUNAI ---
+        const updateChart = () => {
+            const ctx = document.getElementById('cashFlowChart').getContext('2d');
+            
+            if (cashFlowChart) {
+                cashFlowChart.destroy();
+            }
+
+            const monthlyData = {};
+            const { startDate, endDate } = getDateRange();
+            const start = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+            const end = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+
+            for (let d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
+                const monthKey = formatMonth(d);
+                monthlyData[monthKey] = { income: 0, expense: 0 };
+            }
+
+            reportData.forEach(item => {
+                const monthKey = formatMonth(item.date);
+                if (monthlyData[monthKey]) {
+                    if (item.type === 'income') {
+                        monthlyData[monthKey].income += item.amount;
+                    } else if (item.type === 'expense') {
+                        monthlyData[monthKey].expense += item.amount;
+                    }
+                }
+            });
+
+            const labels = Object.keys(monthlyData);
+            const incomeData = labels.map(label => monthlyData[label].income);
+            const expenseData = labels.map(label => monthlyData[label].expense);
+
+            cashFlowChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Pendapatan',
+                            data: incomeData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Perbelanjaan',
+                            data: expenseData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrency(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        // --- FUNGSI 6: MUAT TURUN LAPORAN ---
         const downloadReport = () => {
             try {
-                let csvContent = '';
+                let csvContent = 'Tarikh,Penerangan,Kategori,Jumlah (RM),Status,Pengguna\n';
                 
-                // Headers
-                if (isAdmin) {
-                    csvContent = 'Tarikh,Penerangan,Kategori,Jumlah (RM),Status,Pengguna\n';
-                } else {
-                    csvContent = 'Tarikh,Penerangan,Jumlah (RM),Status\n';
-                }
-                
-                // Data rows
                 reportData.forEach(item => {
                     const date = formatDate(item.date);
                     const status = item.status || 'success';
                     const statusText = status === 'success' ? 'Berjaya' : 'Gagal';
-                    
-                    if (isAdmin) {
-                        csvContent += `${date},"${item.description}","${item.category}","${formatCurrency(item.amount)}","${statusText}","${item.userName}"\n`;
-                    } else {
-                        csvContent += `${date},"${item.description}","${formatCurrency(item.amount)}","${statusText}\n`;
-                    }
+                    csvContent += `${date},"${item.description}","${item.category}","${formatCurrency(item.amount)}","${statusText}","${item.userName}"\n`;
                 });
                 
-                // Create blob and download
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
-                
-                const reportTypeText = isAdmin ? 'laporan_kewangan' : 'laporan_peribadi';
-                const currentDate = new Date().toISOString().slice(0, 10);
-                
                 link.setAttribute("href", url);
-                link.setAttribute("download", `${reportTypeText}_${currentDate}.csv`);
+                link.setAttribute("download", `laporan_kewangan_${new Date().toISOString().slice(0, 10)}.csv`);
                 link.style.visibility = 'hidden';
                 document.body.appendChild(link);
                 link.click();
@@ -1428,8 +1365,6 @@
         };
 
         // --- EVENT LISTENERS ---
-        
-        // Filter controls
         reportTypeEl.addEventListener('change', fetchReportData);
         dateRangeEl.addEventListener('change', () => {
             if (dateRangeEl.value === 'custom') {
@@ -1439,17 +1374,11 @@
             }
             fetchReportData();
         });
-        
         startDateEl.addEventListener('change', fetchReportData);
         endDateEl.addEventListener('change', fetchReportData);
-        
-        // Refresh button
         refreshBtnEl.addEventListener('click', fetchReportData);
-        
-        // Download button
         downloadBtnEl.addEventListener('click', downloadReport);
         
-        // Logout button
         document.getElementById('logoutBtn').addEventListener('click', () => {
             showLoading();
             signOutUser().then(() => {
@@ -1467,12 +1396,10 @@
             if (user) {
                 currentUser = user;
                 showLoading();
-                
                 updateHeaderProfile(user.uid).then(() => {
-                    isAdmin = currentUserData.role === 'admin';
                     fetchReportData().then(() => {
                         hideLoading();
-                    showToast("Data laporan berjaya dimuatkan.", "success");
+                        showToast("Data laporan berjaya dimuatkan.", "success");
                     }).catch((error) => {
                         console.error("Ralat memuatkan data:", error);
                         hideLoading();
@@ -1492,12 +1419,8 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('ServiceWorker registration failed: ', error);
-                    });
+                    .then(registration => console.log('ServiceWorker registration successful'))
+                    .catch(error => console.log('ServiceWorker registration failed'));
             });
         }
     </script>
