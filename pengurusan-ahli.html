@@ -14,7 +14,7 @@
     <!-- PWA: Pautan ke Manifest -->
     <link rel="manifest" href="/manifest.json">
     
-    <title>Urus Ahli - Panel Admin</title>
+    <title>Urus Ahli - Portal Komuniti</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
@@ -97,6 +97,12 @@
             flex-direction: column;
             z-index: 100;
             transition: transform 0.3s ease;
+            /* PWA: Make sidebar scrollable on mobile */
+            overflow-y: auto;
+            /* PWA: Enable smooth scrolling for touch devices */
+            -webkit-overflow-scrolling: touch;
+            /* PWA: Add padding at bottom for better mobile experience */
+            padding-bottom: 5rem;
         }
 
         .sidebar-toggle {
@@ -112,6 +118,8 @@
             padding: 10px;
             cursor: pointer;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            /* PWA: Add haptic feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
         .brand {
@@ -146,6 +154,11 @@
             border-radius: 8px;
             transition: var(--transition);
             font-size: 0.95rem;
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+            /* PWA: Add transform for better mobile interaction */
+            transform: translateZ(0);
+            position: relative;
         }
 
         .menu li a:hover, .menu li a.active {
@@ -576,10 +589,26 @@
             border-left: 4px solid var(--accent);
         }
 
-        /* --- MOBILE RESPONSIVE --- */
+        /* Tablet Responsive */
+        @media (max-width: 1024px) {
+            .search-filter-container {
+                flex-wrap: wrap;
+            }
+            
+            .search-box {
+                min-width: 200px;
+            }
+        }
+
+        /* Mobile Responsive */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                /* PWA: Adjust height for mobile browsers */
+                height: 100vh;
+                /* PWA: Ensure safe area for notched phones */
+                padding-top: env(safe-area-inset-top, 1.5rem);
+                padding-bottom: env(safe-area-inset-bottom, 5rem);
             }
             
             .sidebar.active {
@@ -603,6 +632,108 @@
             
             .welcome-banner h1 { font-size: 1.5rem; }
         }
+
+        /* Small Mobile Responsive */
+        @media (max-width: 480px) {
+            .search-box {
+                min-width: 100%;
+            }
+            
+            .filter-select {
+                width: 100%;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* PWA: Add overlay for sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* PWA: Add visual feedback for active menu items */
+        .menu li a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 70%;
+            background-color: var(--accent);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* PWA: Add animation for menu items */
+        .menu li a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 12px;
+            width: calc(100% - 24px);
+            height: 1px;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu li a:hover::after {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* PWA: Add animation for sidebar toggle button */
+        .sidebar-toggle {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+
+        /* PWA: Add logout button styling */
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn:hover { 
+            background: var(--danger); 
+            color: white; 
+        }
     </style>
 </head>
 <body>
@@ -615,6 +746,9 @@
         </div>
     </div>
 
+    <!-- PWA: Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Sidebar Toggle Button for Mobile -->
     <button class="sidebar-toggle" id="sidebarToggle">
         <i class="ph ph-list"></i>
@@ -623,7 +757,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="brand">
             <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
-            <span>KOMUNITI<br><small style="font-size: 0.7rem; opacity: 0.7;">TAMAN HARMONI</small></span>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
         </div>
         
         <div class="menu-group">
@@ -661,7 +795,7 @@
             </ul>
         </div>
         
-        <button class="logout-btn" id="logoutBtn" style="margin-top: auto; background: none; border: none; color: #94a3b8; padding: 12px; text-align: left; border-radius: 8px; cursor: pointer; transition: var(--transition);">
+        <button class="logout-btn" id="logoutBtn">
             <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
         </button>
     </aside>
@@ -911,6 +1045,7 @@
         const loadingOverlayEl = document.getElementById('loadingOverlay');
         const sidebarToggleEl = document.getElementById('sidebarToggle');
         const sidebarEl = document.getElementById('sidebar');
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay'); // PWA: New overlay element
         
         // Table Elements
         const membersTableEl = document.getElementById('membersTable');
@@ -1000,10 +1135,52 @@
             }, 3000);
         };
 
-        // Toggle sidebar for mobile
-        sidebarToggleEl.addEventListener('click', () => {
+        // PWA: Toggle sidebar for mobile with overlay
+        const toggleSidebar = () => {
             sidebarEl.classList.toggle('active');
+            sidebarOverlayEl.classList.toggle('active');
+            
+            // PWA: Add haptic feedback if supported
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+            }
+        };
+
+        // PWA: Close sidebar when clicking overlay
+        sidebarOverlayEl.addEventListener('click', () => {
+            sidebarEl.classList.remove('active');
+            sidebarOverlayEl.classList.remove('active');
         });
+
+        // PWA: Add swipe gesture support for sidebar
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        const handleSwipe = () => {
+            // Swipe right to open sidebar
+            if (touchEndX - touchStartX > 50 && touchStartX < 50) {
+                sidebarEl.classList.add('active');
+                sidebarOverlayEl.classList.add('active');
+            }
+            
+            // Swipe left to close sidebar
+            if (touchStartX - touchEndX > 50 && sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        };
+
+        // Sidebar toggle event listener
+        sidebarToggleEl.addEventListener('click', toggleSidebar);
 
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
@@ -1012,6 +1189,15 @@
                 !sidebarToggleEl.contains(e.target) && 
                 sidebarEl.classList.contains('active')) {
                 sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        });
+
+        // PWA: Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
             }
         });
 
@@ -1084,7 +1270,7 @@
             }
         };
 
-        // --- FUNGSI 3: GUNA PENAPIS DAN PAPAR SEMULA ---
+        // --- FUNGSI3: GUNA PENAPIS DAN PAPAR SEMULA ---
         const applyFiltersAndRender = () => {
             const searchTerm = searchInputEl.value.toLowerCase();
             const statusFilter = statusFilterEl.value;
@@ -1110,7 +1296,7 @@
             // Render table
             membersTableEl.innerHTML = '';
             
-            if (paginatedMembers.length === 0) {
+            if (paginatedMembers.length ===0) {
                 membersTableEl.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tiada ahli yang sepadan dengan kriteria carian.</td></tr>';
             } else {
                 paginatedMembers.forEach(member => {
