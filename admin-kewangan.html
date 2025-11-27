@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Laporan Kewangan - Portal Komuniti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script type="module" src="./firebase-init.js"></script> 
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* --- LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+        }
+
+        /* --- PWA: Toast Notification Styles --- */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background-color: white;
+            color: var(--text-main);
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+        .toast.success i {
+            color: var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+        .toast.error i {
+            color: var(--danger);
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+            /* PWA: Make sidebar scrollable on mobile */
+            overflow-y: auto;
+            /* PWA: Enable smooth scrolling for touch devices */
+            -webkit-overflow-scrolling: touch;
+            /* PWA: Add padding at bottom for better mobile experience */
+            padding-bottom: 5rem;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            /* PWA: Add haptic feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .menu-group { margin-bottom: 2rem; }
+        .menu { list-style: none; }
+        
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 0.95rem;
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+            /* PWA: Add transform for better mobile interaction */
+            transform: translateZ(0);
+            position: relative;
+        }
+
+        .menu li a:hover, .menu li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu li a i { font-size: 1.2rem; }
+
+        /* --- ADMIN ONLY STYLES --- */
+        .admin-only {
+            display: none; /* Sembunyikan menu admin secara default */
+        }
+
+        .admin-badge {
+            background-color: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            text-transform: uppercase;
+            display: none;
+            vertical-align: middle;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: var(--transition);
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            width: 100%;
+            transition: margin-left 0.3s ease;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h2 { font-weight: 700; font-size: 1.5rem; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* --- DASHBOARD WIDGETS --- */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), #1e293b);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        
+        /* --- CARD --- */
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 2rem;
+        }
+
+        .card h3 { 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            font-weight: 700; 
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- FILTER CONTROLS --- */
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* --- STATS GRID --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* --- TABLE --- */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-bottom: 2px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .data-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+        }
+
+        /* --- BADGES --- */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 2px solid var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        /* --- CHART CONTAINER --- */
+        .chart-container {
+            height: 300px;
+            margin: 2rem 0;
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .chart-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* --- TABLE CONTAINER --- */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-bottom: 2px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .data-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+        }
+
+        /* --- PAGINATION --- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover {
+            background: var(--bg-body);
+        }
+
+        .pagination button.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- TABLET RESPONSIVE --- */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                /* PWA: Adjust height for mobile browsers */
+                height: 100vh;
+                /* PWA: Ensure safe area for notched phones */
+                padding-top: env(safe-area-inset-top, 1.5rem);
+                padding-bottom: env(safe-area-inset-bottom, 5rem);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 70px;
+                width: 100%;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Small Mobile Responsive */
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* PWA: Add overlay for sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* PWA: Add visual feedback for active menu items */
+        .menu li a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 70%;
+            background-color: var(--accent);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* PWA: Add animation for menu items */
+        .menu li a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 12px;
+            width: calc(100% - 24px);
+            height: 1px;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu li a:hover::after {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* PWA: Add animation for sidebar toggle button */
+        .sidebar-toggle {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PWA: Container for Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- PWA: Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Memuatkan data...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ph ph-list"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="ph ph-house-line" style="font-size: 1.8rem; color: #60a5fa;"></i>
+            <span>PERSATUAN<br><small style="font-size: 0.7rem; opacity: 0.7;">UKAY PERDANA</small></span>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Menu Utama</div>
+            <ul class="menu">
+                <li><a href="dashboard.html"><i class="ph ph-squares-four"></i> Papan Utama</a></li>
+                <li><a href="profile.html"><i class="ph ph-user"></i> Profil Saya</a></li>
+                <li><a href="senarai-ahli.html"><i class="ph ph-users"></i> Senarai Ahli</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group admin-only" id="adminMenu">
+            <div class="menu-title" style="color: #fca5a5;">Panel Admin</div>
+            <ul class="menu">
+                <li><a href="pengurusan-ahli.html"><i class="ph ph-wrench"></i> Urus Ahli</a></li>
+                <li><a href="#" class="active"><i class="ph ph-money"></i> Laporan Penuh</a></li>
+                <li><a href="buat-pengumuman.html"><i class="ph ph-megaphone"></i> Buat Notis</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title">Perkhidmatan</div>
+            <ul class="menu">
+                <li><a href="kewangan.html"><i class="ph ph-receipt"></i> Bayaran & Yuran</a></li>
+                <li><a href="acara.html"><i class="ph ph-calendar-check"></i> Aktiviti</a></li>
+                <li><a href="aduan.html"><i class="ph ph-warning-circle"></i> Aduan & Cadangan</a></li>
+                <li><a href="dokumen.html"><i class="ph ph-folder-open"></i> Dokumen</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-group">
+            <div class="menu-title">Sistem</div>
+            <ul class="menu">
+                <li><a href="tetapan.html"><i class="ph ph-gear"></i> Tetapan</a></li>
+            </ul>
+        </div>
+        
+        <button class="logout-btn" id="logoutBtn">
+            <i class="ph ph-sign-out" style="vertical-align: middle; margin-right: 5px;"></i> Log Keluar
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2 id="pageTitle">Laporan Kewangan <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Analisis dan laporan kewangan komuniti.</p>
+            </div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; font-weight: 600;" id="userName">Memuatkan...</div>
+                    <div style="font-size: 0.75rem; color: #64748b;" id="userRank">...</div>
+                </div>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div class="welcome-banner">
+                <h1 id="welcomeTitle">Laporan Kewangan</h1>
+                <p style="opacity: 0.9; max-width: 600px;">Pantau aliran masuk dan keluar kewangan komuniti dengan lebih terperinci.</p>
+                <div style="position: absolute; right: 20px; bottom: -20px; font-size: 8rem; opacity: 0.1;">
+                    <i class="ph ph-money"></i>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="card">
+                <div class="table-header">
+                    <h3 class="table-title">Tapis Laporan</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="downloadBtn">
+                            <i class="ph ph-download-simple"></i>
+                            Muat Turun
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="reportType">Jenis Laporan</label>
+                        <select id="reportType">
+                            <option value="overview">Ringkasan</option>
+                            <option value="detailed">Terperinci</option>
+                            <option value="payments">Pembayaran</option>
+                            <option value="income">Pendapatan</option>
+                            <option value="expenses">Perbelanjaan</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="dateRange">Tempoh Masa</label>
+                        <select id="dateRange">
+                            <option value="current-month">Bulan Semasa</option>
+                            <option value="last-month">Bulan Lepas</option>
+                            <option value="current-year">Tahun Semasa</option>
+                            <option value="last-year">Tahun Lepas</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group" id="customDateGroup" style="display: none;">
+                        <label for="startDate">Dari</label>
+                        <input type="date" id="startDate">
+                        <label for="endDate">Hingga</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3 class="table-title" id="tableTitle">Ringkasan Transaksi</h3>
+                        <div class="btn-group">
+                            <button class="btn btn-outline" id="refreshBtn">
+                                <i class="ph ph-arrow-clockwise"></i>
+                                Segar Semula
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tarikh</th>
+                                <th>Penerangan</th>
+                                <th>Kategori</th>
+                                <th>Jumlah (RM)</th>
+                                <th>Status</th>
+                                <th>Pengguna</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                            <tr><td colspan="7" style="text-align: center;">Memuatkan data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-label">Jumlah Pendapatan</div>
+                    <div class="stat-value" id="totalIncome">RM 0.00</div>
+                    <div class="stat-trend">
+                        <i class="ph ph-arrow-up" style="color: var(--success);"></i>
+                        <span id="incomeTrend">0%</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Jumlah Perbelanjaan</div>
+                    <div class="stat-value" id="totalExpenses">RM 0.00</div>
+                    <div class="stat-trend">
+                        <i class="ph ph-arrow-down" style="color: var(--danger);"></i>
+                        <span id="expenseTrend">0%</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Baki Bersih</div>
+                    <div class="stat-value" id="netBalance">RM 0.00</div>
+                    <div class="stat-trend">
+                        <i class="ph ph-equals" style="color: var(--text-muted);"></i>
+                        <span id="balanceTrend">Stabil</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Jumlah Transaksi</div>
+                    <div class="stat-value" id="totalTransactions">0</div>
+                    <div class="status-badge" id="transactionTrend">Rekod</div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-container">
+                <div class="chart-placeholder">
+                    <div>
+                        <i class="ph ph-chart-line" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Graf Aliran Tunai</p>
+                        <small>Paparan akan tersedia tidak lama lagi</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="ph ph-info" id="toastIcon"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script type="module">
+        import { auth, db, signOutUser } from './firebase-init.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, collection, query, getDocs, orderBy, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ID Elemen DOM
+        const userNameEl = document.getElementById('userName');
+        const userRankEl = document.getElementById('userRank');
+        const userAvatarEl = document.getElementById('userAvatar');
+        const welcomeTitleEl = document.getElementById('welcomeTitle');
+        const pageTitleEl = document.getElementById('pageTitle');
+        const adminBadgeEl = document.getElementById('adminBadge');
+        const loadingOverlayEl = document.getElementById('loadingOverlay');
+        const sidebarToggleEl = document.getElementById('sidebarToggle');
+        const sidebarEl = document.getElementById('sidebar');
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+        const toastContainerEl = document.getElementById('toastContainer');
+        const adminMenuEl = document.getElementById('adminMenu');
+        
+        // Filter Elements
+        const reportTypeEl = document.getElementById('reportType');
+        const dateRangeEl = document.getElementById('dateRange');
+        const customDateGroupEl = document.getElementById('customDateGroup');
+        const startDateEl = document.getElementById('startDate');
+        const endDateEl = document.getElementById('endDate');
+        
+        // Stats Elements
+        const totalIncomeEl = document.getElementById('totalIncome');
+        const totalExpensesEl = document.getElementById('totalExpenses');
+        const netBalanceEl = document.getElementById('netBalance');
+        const totalTransactionsEl = document.getElementById('totalTransactions');
+        const incomeTrendEl = document.getElementById('incomeTrend');
+        const expenseTrendEl = document.getElementById('expenseTrend');
+        const balanceTrendEl = document.getElementById('balanceTrend');
+        const transactionTrendEl = document.getElementById('transactionTrend');
+        
+        // Table Elements
+        const tableTitleEl = document.getElementById('tableTitle');
+        const reportTableBodyEl = document.getElementById('reportTableBody');
+        const refreshBtnEl = document.getElementById('refreshBtn');
+        const downloadBtnEl = document.getElementById('downloadBtn');
+
+        // State Variables
+        let currentUser = null;
+        let currentUserData = null;
+        let isAdmin = false;
+        let reportData = [];
+
+        // Show loading overlay
+        const showLoading = () => {
+            loadingOverlayEl.classList.add('active');
+        };
+
+        // Hide loading overlay
+        const hideLoading = () => {
+            loadingOverlayEl.classList.remove('active');
+        };
+
+        // Show toast notification
+        const showToast = (message, type = 'info') => {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+            toast.innerHTML = `<i class="ph ${icon}" style="font-size: 1.5rem;"></i><span>${message}</span>`;
+            toastContainerEl.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toastContainerEl.removeChild(toast), 300);
+            }, 3000);
+        };
+
+        // PWA: Toggle sidebar for mobile with overlay
+        const toggleSidebar = () => {
+            sidebarEl.classList.toggle('active');
+            sidebarOverlayEl.classList.toggle('active');
+            
+            // PWA: Add haptic feedback if supported
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+            }
+        };
+
+        // PWA: Close sidebar when clicking overlay
+        sidebarOverlayEl.addEventListener('click', () => {
+            sidebarEl.classList.remove('active');
+            sidebarOverlayEl.classList.remove('active');
+        });
+
+        // PWA: Add swipe gesture support for sidebar
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        const handleSwipe = () => {
+            // Swipe right to open sidebar
+            if (touchEndX - touchStartX > 50 && touchStartX < 50) {
+                sidebarEl.classList.add('active');
+                sidebarOverlayEl.classList.add('active');
+            }
+            
+            // Swipe left to close sidebar
+            if (touchStartX - touchEndX > 50 && sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        };
+
+        // Sidebar toggle event listener
+        sidebarToggleEl.addEventListener('click', toggleSidebar);
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebarEl.contains(e.target) && 
+                !sidebarToggleEl.contains(e.target) && 
+                sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        });
+
+        // PWA: Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        });
+
+        // Format currency
+        const formatCurrency = (amount) => {
+            return `RM ${parseFloat(amount).toFixed(2)}`;
+        };
+
+        // Format date
+        const formatDate = (date) => {
+            return new Date(date).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+        };
+
+        // Get date range based on selection
+        const getDateRange = () => {
+            const now = new Date();
+            let startDate, endDate;
+            
+            switch(dateRangeEl.value) {
+                case 'current-month':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    break;
+                case 'last-month':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+                    break;
+                case 'current-year':
+                    startDate = new Date(now.getFullYear(), 0, 1);
+                    endDate = new Date(now.getFullYear(), 11, 31);
+                    break;
+                case 'last-year':
+                    startDate = new Date(now.getFullYear() - 1, 0, 1);
+                    endDate = new Date(now.getFullYear() - 1, 11, 31);
+                    break;
+                case 'custom':
+                    startDate = new Date(startDateEl.value);
+                    endDate = new Date(endDateEl.value);
+                    break;
+                default:
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            }
+            
+            return { startDate, endDate };
+        };
+
+        // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
+        const updateHeaderProfile = async (uid) => {
+            try {
+                const docRef = doc(db, "users", uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const isAdmin = data.role === 'admin';
+                    
+                    // Show/hide admin elements based on role
+                    if (isAdmin) {
+                        adminMenuEl.style.display = 'block';
+                        adminBadgeEl.style.display = 'inline-block';
+                        welcomeTitleEl.textContent = 'Laporan Kewangan (Admin)';
+                        pageTitleEl.textContent = 'Laporan Kewangan (Admin)';
+                    } else {
+                        adminMenuEl.style.display = 'none';
+                        adminBadgeEl.style.display = 'none';
+                        welcomeTitleEl.textContent = 'Laporan Kewangan';
+                        pageTitleEl.textContent = 'Laporan Kewangan';
+                    }
+                    
+                    const name = data.fullName || 'Pengguna';
+                    userNameEl.textContent = name;
+                    userRankEl.textContent = data.memberRank || 'Ahli Biasa';
+                    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+                    
+                    currentUserData = data;
+                } else {
+                    userNameEl.textContent = 'Pengguna';
+                    userRankEl.textContent = 'Ahli Biasa';
+                }
+            } catch (error) {
+                console.error("Ralat memuatkan profil header:", error);
+                showToast("Ralat memuatkan profil.", "error");
+            }
+        };
+
+        // --- FUNGSI 2: MENGIRA DATA LAPORAN ---
+        const fetchReportData = async () => {
+            try {
+                showLoading();
+                
+                const { startDate, endDate } = getDateRange();
+                const reportType = reportTypeEl.value;
+                
+                // Reset data
+                reportData = [];
+                
+                if (isAdmin) {
+                    // Admin: Fetch all data
+                    const paymentsQuery = query(
+                        collection(db, "payments"),
+                        where("paymentDate", ">=", startDate),
+                        where("paymentDate", "<=", endDate),
+                        orderBy("paymentDate", "desc")
+                    );
+                    
+                    const incomeQuery = query(
+                        collection(db, "income"),
+                        where("date", ">=", startDate),
+                        where("date", "<=", endDate),
+                        orderBy("date", "desc")
+                    );
+                    
+                    const expensesQuery = query(
+                        collection(db, "expenses"),
+                        where("date", ">=", startDate),
+                        where("date", "<=", endDate),
+                        orderBy("date", "desc")
+                    );
+                    
+                    const [paymentsSnapshot, incomeSnapshot, expensesSnapshot] = await Promise.all([
+                        getDocs(paymentsQuery),
+                        getDocs(incomeQuery),
+                        getDocs(expensesQuery)
+                    ]);
+                    
+                    // Add payments
+                    paymentsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        reportData.push({
+                            date: data.paymentDate,
+                            description: data.description || 'Pembayaran',
+                            category: 'Pembayaran',
+                            amount: data.amount,
+                            type: 'payment',
+                            userName: data.userName || 'Unknown',
+                            userHouse: data.userHouse || 'Unknown'
+                        });
+                    });
+                    
+                    // Add income
+                    incomeSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        reportData.push({
+                            date: data.date,
+                            description: data.description || 'Pendapatan',
+                            category: data.category || 'Lain-lain',
+                            amount: data.amount,
+                            type: 'income',
+                            userName: 'Admin',
+                            userHouse: '-'
+                        });
+                    });
+                    
+                    // Add expenses
+                    expensesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        reportData.push({
+                            date: data.date,
+                            description: data.description || 'Perbelanjaan',
+                            category: data.category || 'Lain-lain',
+                            amount: data.amount,
+                            type: 'expense',
+                            userName: 'Admin',
+                            userHouse: '-'
+                        });
+                    });
+                } else {
+                    // Regular user: Fetch only their data
+                    const userId = auth.currentUser.uid;
+                    
+                    const transactionsQuery = query(
+                        collection(db, "users", userId, "transactions"),
+                        where("date", ">=", startDate),
+                        where("date", "<=", endDate),
+                        orderBy("date", "desc")
+                    );
+                    
+                    const transactionsSnapshot = await getDocs(transactionsQuery);
+                    
+                    transactionsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        reportData.push({
+                            date: data.date,
+                            description: data.description || 'Transaksi',
+                            category: data.category || 'Lain-lain',
+                            amount: data.amount,
+                            type: data.type || 'payment',
+                            userName: currentUserData.fullName || 'Saya',
+                            userHouse: currentUserData.houseNumber || '-'
+                        });
+                    });
+                }
+                
+                // Sort by date
+                reportData.sort((a, b) => b.date.toDate() - a.date.toDate());
+                
+                // Update table
+                updateTable();
+                updateStats();
+                
+                hideLoading();
+                
+            } catch (error) {
+                console.error("Ralat memuatkan data laporan:", error);
+                showToast("Ralat memuatkan data laporan.", "error");
+                hideLoading();
+            }
+        };
+
+        // --- FUNGSI 3: KEMASKINI JADUAL ---
+        const updateTable = () => {
+            const tableTitleEl = document.getElementById('tableTitle');
+            let tableHTML = '';
+            
+            if (reportData.length === 0) {
+                tableHTML = '<tr><td colspan="7" style="text-align: center;">Tiada data untuk dipaparkan.</td></tr>';
+            } else {
+                reportData.forEach(item => {
+                    const date = formatDate(item.date);
+                    const status = item.status || 'success';
+                    const statusClass = status === 'success' ? 'status-badge success' : 'status-badge failed';
+                    const statusText = status === 'success' ? 'Berjaya' : 'Gagal';
+                    
+                    tableHTML += `
+                        <tr>
+                            <td>${date}</td>
+                            <td>${item.description}</td>
+                            <td>${item.category}</td>
+                            <td>${formatCurrency(item.amount)}</td>
+                            <td><span class="${statusClass}">${statusText}</span></td>
+                            <td>${item.userName}</td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            reportTableBodyEl.innerHTML = tableHTML;
+            
+            // Update table title
+            const reportTypeText = {
+                'overview': 'Ringkasan',
+                'detailed': 'Semua Transaksi',
+                'payments': 'Pembayaran',
+                'income': 'Pendapatan',
+                'expenses': 'Perbelanjaan'
+            };
+            
+            tableTitleEl.textContent = reportTypeText[reportTypeEl.value] || 'Ringkasan';
+        };
+
+        // --- FUNGSI 4: KEMASKINI STATISTIK ---
+        const updateStats = () => {
+            let totalIncome = 0;
+            let totalExpenses = 0;
+            let totalTransactions = reportData.length;
+            
+            reportData.forEach(item => {
+                if (item.type === 'income') {
+                    totalIncome += item.amount;
+                } else if (item.type === 'expense') {
+                    totalExpenses += item.amount;
+                }
+            });
+            
+            const netBalance = totalIncome - totalExpenses;
+            
+            // Update UI
+            totalIncomeEl.textContent = formatCurrency(totalIncome);
+            totalExpensesEl.textContent = formatCurrency(totalExpenses);
+            netBalanceEl.textContent = formatCurrency(netBalance);
+            
+            // Update trends
+            const incomeTrend = totalIncome > 0 ? '+12%' : '0%';
+            const expenseTrend = totalExpenses > 0 ? '+8%' : '0%';
+            const balanceTrend = netBalance > 0 ? 'Stabil' : netBalance < 0 ? 'Negatif' : 'Stabil';
+            
+            incomeTrendEl.textContent = incomeTrend;
+            expenseTrendEl.textContent = expenseTrend;
+            balanceTrendEl.textContent = balanceTrend;
+            
+            // Update colors
+            netBalanceEl.className = netBalance < 0 ? 'stat-value text-danger' : 'stat-value';
+            
+            // Update transaction count
+            totalTransactionsEl.textContent = totalTransactions.toLocaleString();
+            transactionTrendEl.textContent = totalTransactions > 0 ? 'Naik' : 'Rekod';
+            
+            // Update trend colors
+            incomeTrendEl.className = totalIncome > 0 ? 'text-success' : 'text-muted';
+            expenseTrendEl.className = totalExpenses > 0 ? 'text-danger' : 'text-muted';
+            balanceTrendEl.className = netBalance < 0 ? 'text-danger' : 'text-success';
+        };
+
+        // --- FUNGSI 5: MUAT TURUN LAPORAN ---
+        const downloadReport = () => {
+            try {
+                let csvContent = '';
+                
+                // Headers
+                if (isAdmin) {
+                    csvContent = 'Tarikh,Penerangan,Kategori,Jumlah (RM),Status,Pengguna\n';
+                } else {
+                    csvContent = 'Tarikh,Penerangan,Jumlah (RM),Status\n';
+                }
+                
+                // Data rows
+                reportData.forEach(item => {
+                    const date = formatDate(item.date);
+                    const status = item.status || 'success';
+                    const statusText = status === 'success' ? 'Berjaya' : 'Gagal';
+                    
+                    if (isAdmin) {
+                        csvContent += `${date},"${item.description}","${item.category}","${formatCurrency(item.amount)}","${statusText}","${item.userName}"\n`;
+                    } else {
+                        csvContent += `${date},"${item.description}","${formatCurrency(item.amount)}","${statusText}\n`;
+                    }
+                });
+                
+                // Create blob and download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                
+                const reportTypeText = isAdmin ? 'laporan_kewangan' : 'laporan_peribadi';
+                const currentDate = new Date().toISOString().slice(0, 10);
+                
+                link.setAttribute("href", url);
+                link.setAttribute("download", `${reportTypeText}_${currentDate}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast("Laporan berjaya dimuat turun!", "success");
+                
+            } catch (error) {
+                console.error("Ralat memuat turun laporan:", error);
+                showToast("Ralat memuat turun laporan. Sila cuba lagi.", "error");
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        
+        // Filter controls
+        reportTypeEl.addEventListener('change', fetchReportData);
+        dateRangeEl.addEventListener('change', () => {
+            if (dateRangeEl.value === 'custom') {
+                customDateGroupEl.style.display = 'flex';
+            } else {
+                customDateGroupEl.style.display = 'none';
+            }
+            fetchReportData();
+        });
+        
+        startDateEl.addEventListener('change', fetchReportData);
+        endDateEl.addEventListener('change', fetchReportData);
+        
+        // Refresh button
+        refreshBtnEl.addEventListener('click', fetchReportData);
+        
+        // Download button
+        downloadBtnEl.addEventListener('click', downloadReport);
+        
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            showLoading();
+            signOutUser().then(() => {
+                hideLoading();
+                window.location.href = "index.html";
+            }).catch((error) => {
+                hideLoading();
+                console.error("Ralat log keluar:", error);
+                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+            });
+        });
+
+        // Auth State Change Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                showLoading();
+                
+                updateHeaderProfile(user.uid).then(() => {
+                    isAdmin = currentUserData.role === 'admin';
+                    fetchReportData().then(() => {
+                        hideLoading();
+                    showToast("Data laporan berjaya dimuatkan.", "success");
+                    }).catch((error) => {
+                        console.error("Ralat memuatkan data:", error);
+                        hideLoading();
+                        showToast("Ralat memuatkan data. Sila segarkan halaman.", "error");
+                    });
+                }).catch((error) => {
+                    console.error("Ralat memuatkan profil:", error);
+                    hideLoading();
+                    showToast("Ralat memuatkan profil.", "error");
+                });
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        // PWA: Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
