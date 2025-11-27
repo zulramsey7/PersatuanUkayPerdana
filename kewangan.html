@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA: Meta Tags untuk PWA -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal Komuniti">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <!-- PWA: Pautan ke Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
     <title>Kewangan - Portal Komuniti</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -86,6 +97,12 @@
             flex-direction: column;
             z-index: 100;
             transition: transform 0.3s ease;
+            /* PWA: Make sidebar scrollable on mobile */
+            overflow-y: auto;
+            /* PWA: Enable smooth scrolling for touch devices */
+            -webkit-overflow-scrolling: touch;
+            /* PWA: Add padding at bottom for better mobile experience */
+            padding-bottom: 5rem;
         }
 
         .sidebar-toggle {
@@ -101,6 +118,8 @@
             padding: 10px;
             cursor: pointer;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            /* PWA: Add haptic feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
         .brand {
@@ -135,6 +154,11 @@
             border-radius: 8px;
             transition: var(--transition);
             font-size: 0.95rem;
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+            /* PWA: Add transform for better mobile interaction */
+            transform: translateZ(0);
+            position: relative;
         }
 
         .menu li a:hover, .menu li a.active {
@@ -176,9 +200,14 @@
             width: 100%;
             font-weight: 500;
             transition: var(--transition);
+            /* PWA: Add touch feedback */
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
-        .logout-btn:hover { background: var(--danger); color: white; }
+        .logout-btn:hover { 
+            background: var(--danger); 
+            color: white; 
+        }
 
         /* --- MAIN CONTENT --- */
         .main-content {
@@ -248,7 +277,12 @@
             border: 1px solid #f1f5f9;
         }
 
-        .card h3 { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-bottom: 0.5rem; }
+        .card h3 { 
+            font-size: 0.9rem; 
+            color: var(--text-muted); 
+            font-weight: 500; 
+            margin-bottom: 0.5rem; 
+        }
         .card .number { font-size: 1.8rem; font-weight: 700; color: var(--text-main); }
         .card .trend { font-size: 0.8rem; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
         
@@ -498,10 +532,24 @@
             border-left: 4px solid var(--accent);
         }
 
+        /* Tablet Responsive */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            }
+        }
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                /* PWA: Adjust height for mobile browsers */
+                height: 100vh;
+                /* PWA: Ensure safe area for notched phones */
+                padding-top: env(safe-area-inset-top, 1.5rem);
+                padding-bottom: env(safe-area-inset-bottom, 5rem);
             }
             
             .sidebar.active {
@@ -529,6 +577,83 @@
             
             .welcome-banner h1 { font-size: 1.5rem; }
         }
+
+        /* Small Mobile Responsive */
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+            
+            .modal-content {
+                padding: 1.5rem;
+            }
+        }
+
+        /* PWA: Add overlay for sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* PWA: Add visual feedback for active menu items */
+        .menu li a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 70%;
+            background-color: var(--accent);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* PWA: Add animation for menu items */
+        .menu li a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 12px;
+            width: calc(100% - 24px);
+            height: 1px;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu li a:hover::after {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* PWA: Add animation for sidebar toggle button */
+        .sidebar-toggle {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
@@ -540,6 +665,9 @@
             <p>Memuatkan data...</p>
         </div>
     </div>
+
+    <!-- PWA: Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Sidebar Toggle Button for Mobile -->
     <button class="sidebar-toggle" id="sidebarToggle">
@@ -799,6 +927,7 @@
         const loadingOverlayEl = document.getElementById('loadingOverlay');
         const sidebarToggleEl = document.getElementById('sidebarToggle');
         const sidebarEl = document.getElementById('sidebar');
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay'); // PWA: New overlay element
         
         // Modal Elements
         const paymentModalEl = document.getElementById('paymentModal');
@@ -858,10 +987,52 @@
             }, 3000);
         };
 
-        // Toggle sidebar for mobile
-        sidebarToggleEl.addEventListener('click', () => {
+        // PWA: Toggle sidebar for mobile with overlay
+        const toggleSidebar = () => {
             sidebarEl.classList.toggle('active');
+            sidebarOverlayEl.classList.toggle('active');
+            
+            // PWA: Add haptic feedback if supported
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+            }
+        };
+
+        // PWA: Close sidebar when clicking overlay
+        sidebarOverlayEl.addEventListener('click', () => {
+            sidebarEl.classList.remove('active');
+            sidebarOverlayEl.classList.remove('active');
         });
+
+        // PWA: Add swipe gesture support for sidebar
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        const handleSwipe = () => {
+            // Swipe right to open sidebar
+            if (touchEndX - touchStartX > 50 && touchStartX < 50) {
+                sidebarEl.classList.add('active');
+                sidebarOverlayEl.classList.add('active');
+            }
+            
+            // Swipe left to close sidebar
+            if (touchStartX - touchEndX > 50 && sidebarEl.classList.contains('active')) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        };
+
+        // Sidebar toggle event listener
+        sidebarToggleEl.addEventListener('click', toggleSidebar);
 
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
@@ -870,6 +1041,15 @@
                 !sidebarToggleEl.contains(e.target) && 
                 sidebarEl.classList.contains('active')) {
                 sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
+            }
+        });
+
+        // PWA: Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebarEl.classList.remove('active');
+                sidebarOverlayEl.classList.remove('active');
             }
         });
 
@@ -896,7 +1076,11 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     
-                    if (data.role === 'admin') {
+                    // Check if user is admin
+                    const isAdmin = data.role === 'admin';
+                    
+                    // Show/hide admin elements based on role
+                    if (isAdmin) {
                         adminMenuEl.style.display = 'block';
                         adminBadgeEl.style.display = 'inline-block';
                     } else {
@@ -909,8 +1093,8 @@
                     userRankEl.textContent = data.memberRank || 'Ahli Biasa';
                     userAvatarEl.textContent = name.charAt(0).toUpperCase();
                 } else {
-                    userNameEl.textContent = 'Tetamu';
-                    userRankEl.textContent = 'Tidak Berdaftar';
+                    userNameEl.textContent = 'Ahli';
+                    userRankEl.textContent = 'Ahli Biasa';
                 }
             } catch (error) {
                 console.error("Ralat memuatkan profil header:", error);
@@ -1040,7 +1224,6 @@
             
             try {
                 showLoading();
-                console.log("Memulakan proses pembayaran...");
                 
                 // Get form values
                 const paymentType = document.getElementById('paymentType').value;
@@ -1048,8 +1231,6 @@
                 const paymentYear = document.getElementById('paymentYear').value;
                 const paymentAmount = document.getElementById('paymentAmount').value;
                 const paymentMethod = document.getElementById('paymentMethod').value;
-                
-                console.log("Data pembayaran:", { paymentType, paymentMonth, paymentYear, paymentAmount, paymentMethod });
                 
                 // Get current user
                 const user = auth.currentUser;
@@ -1085,10 +1266,8 @@
                     description: description
                 };
                 
-                console.log("Menambah transaksi pengguna...");
                 // Add to user's transactions
                 await addDoc(collection(db, "users", user.uid, "transactions"), transactionData);
-                console.log("Transaksi pengguna berjaya ditambah.");
                 
                 // Add to main payments collection for dashboard
                 const paymentData = {
@@ -1105,9 +1284,7 @@
                     year: paymentYear
                 };
                 
-                console.log("Menambah ke koleksi payments utama...");
                 await addDoc(collection(db, "payments"), paymentData);
-                console.log("Rekod pembayaran utama berjaya ditambah.");
                 
                 // Update user's due amount
                 let newDueAmount = 0;
@@ -1115,11 +1292,9 @@
                     newDueAmount = Math.max(0, userData.dueAmount - parseFloat(paymentAmount));
                 }
                 
-                console.log(`Mengemas kini jumlah tertunggak dari ${userData.dueAmount} kepada ${newDueAmount}`);
                 await updateDoc(userDocRef, {
                     dueAmount: newDueAmount
                 });
-                console.log("Jumlah tertunggak pengguna berjaya dikemas kini.");
                 
                 // Close modal and reset form
                 paymentModalEl.classList.remove('active');
@@ -1127,7 +1302,6 @@
                 initializePaymentForm();
                 
                 // Refresh financial data and transaction history
-                console.log("Memuatkan semula data kewangan...");
                 await Promise.all([
                     fetchFinancialData(user.uid),
                     fetchTransactionHistory(user.uid)
@@ -1218,6 +1392,19 @@
                 window.location.href = "index.html";
             }
         });
+
+        // PWA: Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
