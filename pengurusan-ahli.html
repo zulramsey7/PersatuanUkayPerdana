@@ -15,726 +15,15 @@
     <link rel="manifest" href="/manifest.json">
     
     <title>Urus Ahli - Portal Komuniti</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="pengurusan-ahli.css">
     
     <script type="module" src="./firebase-init.js"></script> 
-
-    <style>
-        :root {
-            --primary: #0f172a;
-            --accent: #2563eb;
-            --bg-body: #f1f5f9;
-            --bg-card: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --sidebar-width: 260px;
-            --transition: all 0.3s ease;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        
-        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
-
-        /* --- LOADING SPINNER --- */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0,0,0,.1);
-            border-radius: 50%;
-            border-top-color: var(--accent);
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-
-        .loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .loading-content {
-            text-align: center;
-        }
-
-        .loading-content .loading-spinner {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 15px;
-        }
-
-        /* --- SIDEBAR --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--primary);
-            color: white;
-            padding: 1.5rem;
-            position: fixed;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-            transition: transform 0.3s ease;
-            /* PWA: Make sidebar scrollable on mobile */
-            overflow-y: auto;
-            /* PWA: Enable smooth scrolling for touch devices */
-            -webkit-overflow-scrolling: touch;
-            /* PWA: Add padding at bottom for better mobile experience */
-            padding-bottom: 5rem;
-        }
-
-        .sidebar-toggle {
-            display: none;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 101;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            /* PWA: Add haptic feedback */
-            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
-        }
-
-        .brand {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 2.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: 0.5px;
-        }
-
-        .menu-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: #94a3b8;
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        .menu-group { margin-bottom: 2rem; }
-        .menu { list-style: none; }
-        
-        .menu li a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            color: #cbd5e1;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: var(--transition);
-            font-size: 0.95rem;
-            /* PWA: Add touch feedback */
-            -webkit-tap-highlight-color: rgba(255,255,255,0.1);
-            /* PWA: Add transform for better mobile interaction */
-            transform: translateZ(0);
-            position: relative;
-        }
-
-        .menu li a:hover, .menu li a.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        .menu li a i { font-size: 1.2rem; }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            flex: 1;
-            padding: 2rem;
-            width: 100%;
-            transition: margin-left 0.3s ease;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        header h2 { font-weight: 700; font-size: 1.5rem; }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: var(--bg-card);
-            padding: 8px 16px;
-            border-radius: 50px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-        }
-
-        .avatar {
-            width: 40px; height: 40px;
-            background: var(--accent);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
-
-        /* --- WELCOME BANNER --- */
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--primary), #1e293b);
-            color: white;
-            padding: 2rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .welcome-banner h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
-
-        /* --- CARD --- */
-        .card {
-            background: var(--bg-card);
-            padding: 1.5rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #f1f5f9;
-            margin-bottom: 2rem;
-        }
-
-        .card h3 { 
-            font-size: 1rem; 
-            color: var(--text-main); 
-            font-weight: 700; 
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* --- SEARCH AND FILTER --- */
-        .search-filter-container {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 250px;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px 16px 12px 40px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            transition: border-color 0.3s;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-        }
-
-        .filter-select {
-            padding: 12px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: white;
-            cursor: pointer;
-            transition: border-color 0.3s;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        /* --- TABLE --- */
-        .table-responsive { 
-            width: 100%; 
-            overflow-x: auto; 
-            margin-bottom: 1rem;
-        }
-        
-        .member-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-        }
-        
-        .member-table th { 
-            text-align: left; 
-            padding: 12px; 
-            font-size: 0.85rem; 
-            color: var(--text-muted); 
-            border-bottom: 1px solid #e2e8f0; 
-        }
-        
-        .member-table td { 
-            padding: 16px 12px; 
-            border-bottom: 1px solid #f1f5f9; 
-            font-size: 0.95rem; 
-        }
-        
-        /* --- BADGES --- */
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .status-badge.active { 
-            background: #dcfce7; 
-            color: #166534; 
-        }
-        
-        .status-badge.inactive { 
-            background: #fee2e2; 
-            color: #991b1b; 
-        }
-
-        .role-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: #f1f5f9;
-            color: var(--text-muted);
-        }
-
-        .role-badge.admin {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        /* --- BUTTONS --- */
-        .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            border: none;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-
-        .btn-outline:hover {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #d97706;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        /* --- MODAL --- */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            transform: translateY(20px);
-            transition: transform 0.3s;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal.active .modal-content {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-header h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-muted);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-        }
-
-        .btn-cancel {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid #e2e8f0;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-cancel:hover {
-            background: var(--bg-body);
-        }
-
-        /* --- PAGINATION --- */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .pagination button {
-            padding: 8px 12px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .pagination button:hover {
-            background: var(--bg-body);
-        }
-
-        .pagination button.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* --- TOAST NOTIFICATION --- */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: transform 0.3s, opacity 0.3s;
-            z-index: 1000;
-            max-width: 350px;
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .toast.success {
-            border-left: 4px solid var(--success);
-        }
-
-        .toast.error {
-            border-left: 4px solid var(--danger);
-        }
-
-        .toast.info {
-            border-left: 4px solid var(--accent);
-        }
-
-        /* Tablet Responsive */
-        @media (max-width: 1024px) {
-            .search-filter-container {
-                flex-wrap: wrap;
-            }
-            
-            .search-box {
-                min-width: 200px;
-            }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                /* PWA: Adjust height for mobile browsers */
-                height: 100vh;
-                /* PWA: Ensure safe area for notched phones */
-                padding-top: env(safe-area-inset-top, 1.5rem);
-                padding-bottom: env(safe-area-inset-bottom, 5rem);
-            }
-            
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            
-            .sidebar-toggle {
-                display: block;
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-                padding-top: 70px;
-                width: 100%;
-            }
-            
-            .search-filter-container {
-                flex-direction: column;
-            }
-            
-            .welcome-banner h1 { font-size: 1.5rem; }
-        }
-
-        /* Small Mobile Responsive */
-        @media (max-width: 480px) {
-            .search-box {
-                min-width: 100%;
-            }
-            
-            .filter-select {
-                width: 100%;
-            }
-            
-            .modal-content {
-                width: 95%;
-                padding: 1.5rem;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-        }
-
-        /* PWA: Add overlay for sidebar */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 99;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
-            opacity: 1;
-        }
-
-        /* PWA: Add visual feedback for active menu items */
-        .menu li a.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 70%;
-            background-color: var(--accent);
-            border-radius: 0 4px 4px 0;
-        }
-
-        /* PWA: Add animation for menu items */
-        .menu li a::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 12px;
-            width: calc(100% - 24px);
-            height: 1px;
-            background-color: transparent;
-            transition: background-color 0.3s ease;
-        }
-
-        .menu li a:hover::after {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* PWA: Add animation for sidebar toggle button */
-        .sidebar-toggle {
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-toggle:hover {
-            transform: scale(1.05);
-        }
-
-        .sidebar-toggle:active {
-            transform: scale(0.95);
-        }
-
-        /* PWA: Add logout button styling */
-        .logout-btn {
-            margin-top: auto;
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: 500;
-            transition: var(--transition);
-            /* PWA: Add touch feedback */
-            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
-        }
-
-        .logout-btn:hover { 
-            background: var(--danger); 
-            color: white; 
-        }
-    </style>
 </head>
 <body>
 
@@ -826,35 +115,43 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <h3>
                     <i class="ph ph-users"></i>
                     Senarai Ahli
                 </h3>
 
                 <!-- Search and Filter -->
-                <div class="search-filter-container">
-                    <div class="search-box">
-                        <i class="ph ph-magnifying-glass"></i>
-                        <input type="text" id="searchInput" placeholder="Cari nama atau emel...">
+                <div class="row mb-3">
+                    <div class="col-md-4 mb-2">
+                        <div class="search-box position-relative">
+                            <i class="ph ph-magnifying-glass position-absolute"></i>
+                            <input type="text" class="form-control ps-5" id="searchInput" placeholder="Cari nama atau emel...">
+                        </div>
                     </div>
-                    <select class="filter-select" id="statusFilter">
-                        <option value="">Semua Status</option>
-                        <option value="aktif">Aktif</option>
-                        <option value="tidak aktif">Tidak Aktif</option>
-                    </select>
-                    <select class="filter-select" id="roleFilter">
-                        <option value="">Semua Peranan</option>
-                        <option value="admin">Admin</option>
-                        <option value="member">Ahli</option>
-                    </select>
-                    <button class="btn btn-primary" id="refreshBtn">
-                        <i class="ph ph-arrow-clockwise"></i>
-                        Segar Semula
-                    </button>
+                    <div class="col-md-2 mb-2">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">Semua Status</option>
+                            <option value="aktif">Aktif</option>
+                            <option value="tidak aktif">Tidak Aktif</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <select class="form-select" id="roleFilter">
+                            <option value="">Semua Peranan</option>
+                            <option value="admin">Admin</option>
+                            <option value="member">Ahli</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-2 d-flex justify-content-end">
+                        <button class="btn btn-primary" id="refreshBtn">
+                            <i class="ph ph-arrow-clockwise"></i>
+                            Segar Semula
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="table-responsive">
-                    <table class="member-table">
+                <div class="table-responsive mb-3">
+                    <table class="table table-hover member-table">
                         <thead>
                             <tr>
                                 <th>Nama</th>
@@ -868,171 +165,184 @@
                             </tr>
                         </thead>
                         <tbody id="membersTable">
-                            <tr><td colspan="8" style="text-align: center;">Memuatkan data ahli...</td></tr>
+                            <tr><td colspan="8" class="text-center">Memuatkan data ahli...</td></tr>
                         </tbody>
                     </table>
                 </div>
 
                 <!-- Pagination -->
-                <div class="pagination" id="pagination">
-                    <button id="prevBtn" disabled><i class="ph ph-arrow-left"></i></button>
+                <div class="d-flex justify-content-center align-items-center gap-2 mb-3" id="pagination">
+                    <button class="btn btn-outline-secondary" id="prevBtn" disabled>
+                        <i class="ph ph-arrow-left"></i>
+                    </button>
                     <div id="pageNumbers"></div>
-                    <button id="nextBtn"><i class="ph ph-arrow-right"></i></button>
+                    <button class="btn btn-outline-secondary" id="nextBtn">
+                        <i class="ph ph-arrow-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </main>
 
     <!-- Edit Member Modal -->
-    <div class="modal" id="editModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Kemaskini Maklumat Ahli</h3>
-                <button class="modal-close" id="closeEditModal">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            
-            <form id="editForm">
-                <div class="form-group">
-                    <label for="editFullName">Nama Penuh</label>
-                    <input type="text" id="editFullName" required>
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kemaskini Maklumat Ahli</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="editEmail">Emel</label>
-                    <input type="email" id="editEmail" required>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editFullName" class="form-label">Nama Penuh</label>
+                                <input type="text" class="form-control" id="editFullName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editEmail" class="form-label">Emel</label>
+                                <input type="email" class="form-control" id="editEmail" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editPhone" class="form-label">No. Telefon</label>
+                                <input type="tel" class="form-control" id="editPhone" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editHouseNumber" class="form-label">No. Rumah</label>
+                                <input type="text" class="form-control" id="editHouseNumber" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editStreetName" class="form-label">Nama Jalan/Lorong</label>
+                                <input type="text" class="form-control" id="editStreetName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editMemberRank" class="form-label">Jawatan/Pangkat</label>
+                                <select class="form-select" id="editMemberRank" required>
+                                    <option value="Pengerusi">Pengerusi</option>
+                                    <option value="Naib Pengerusi">Naib Pengerusi</option>
+                                    <option value="Setiausaha">Setiausaha</option>
+                                    <option value="Bendahari">Bendahari</option>
+                                    <option value="Ahli Jawatankuasa">Ahli Jawatankuasa</option>
+                                    <option value="Ahli Biasa">Ahli Biasa</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editStatus" class="form-label">Status Keahlian</label>
+                                <select class="form-select" id="editStatus" required>
+                                    <option value="aktif">Aktif</option>
+                                    <option value="tidak aktif">Tidak Aktif</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editRole" class="form-label">Peranan Sistem</label>
+                                <select class="form-select" id="editRole" required>
+                                    <option value="member">Ahli</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="form-group">
-                    <label for="editPhone">No. Telefon</label>
-                    <input type="tel" id="editPhone" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editHouseNumber">No. Rumah</label>
-                    <input type="text" id="editHouseNumber" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editStreetName">Nama Jalan/Lorong</label>
-                    <input type="text" id="editStreetName" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editMemberRank">Jawatan/Pangkat</label>
-                    <select id="editMemberRank" required>
-                        <option value="Pengerusi">Pengerusi</option>
-                        <option value="Naib Pengerusi">Naib Pengerusi</option>
-                        <option value="Setiausaha">Setiausaha</option>
-                        <option value="Bendahari">Bendahari</option>
-                        <option value="Ahli Jawatankuasa">Ahli Jawatankuasa</option>
-                        <option value="Ahli Biasa">Ahli Biasa</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editStatus">Status Keahlian</label>
-                    <select id="editStatus" required>
-                        <option value="aktif">Aktif</option>
-                        <option value="tidak aktif">Tidak Aktif</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editRole">Peranan Sistem</label>
-                    <select id="editRole" required>
-                        <option value="member">Ahli</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelEdit">Batal</button>
-                    <button type="submit" class="btn btn-primary">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="saveMemberBtn">
                         <i class="ph ph-check"></i>
                         Simpan Perubahan
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <!-- Create Account Modal -->
-    <div class="modal" id="createAccountModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Cipta Akaun Log Masuk</h3>
-                <button class="modal-close" id="closeCreateAccountModal">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            
-            <form id="createAccountForm">
-                <div class="form-group">
-                    <label for="createAccountEmail">Emel</label>
-                    <input type="email" id="createAccountEmail" required>
+    <div class="modal fade" id="createAccountModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cipta Akaun Log Masuk</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="createAccountPassword">Kata Laluan</label>
-                    <input type="password" id="createAccountPassword" required>
+                <div class="modal-body">
+                    <form id="createAccountForm">
+                        <div class="mb-3">
+                            <label for="createAccountEmail" class="form-label">Emel</label>
+                            <input type="email" class="form-control" id="createAccountEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="createAccountPassword" class="form-label">Kata Laluan</label>
+                            <input type="password" class="form-control" id="createAccountPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="createAccountConfirmPassword" class="form-label">Sahkan Kata Laluan</label>
+                            <input type="password" class="form-control" id="createAccountConfirmPassword" required>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="form-group">
-                    <label for="createAccountConfirmPassword">Sahkan Kata Laluan</label>
-                    <input type="password" id="createAccountConfirmPassword" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelCreateAccount">Batal</button>
-                    <button type="submit" class="btn btn-primary">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="createAccountBtn">
                         <i class="ph ph-check"></i>
                         Cipta Akaun
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <!-- Reset Password Modal -->
-    <div class="modal" id="resetPasswordModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Tetapkan Semula Kata Laluan</h3>
-                <button class="modal-close" id="closeResetPasswordModal">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            
-            <form id="resetPasswordForm">
-                <div class="form-group">
-                    <label for="resetPasswordNew">Kata Laluan Baharu</label>
-                    <input type="password" id="resetPasswordNew" required>
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tetapkan Semula Kata Laluan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="resetPasswordConfirm">Sahkan Kata Laluan Baharu</label>
-                    <input type="password" id="resetPasswordConfirm" required>
+                <div class="modal-body">
+                    <form id="resetPasswordForm">
+                        <div class="mb-3">
+                            <label for="resetPasswordNew" class="form-label">Kata Laluan Baharu</label>
+                            <input type="password" class="form-control" id="resetPasswordNew" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="resetPasswordConfirm" class="form-label">Sahkan Kata Laluan Baharu</label>
+                            <input type="password" class="form-control" id="resetPasswordConfirm" required>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelResetPassword">Batal</button>
-                    <button type="submit" class="btn btn-primary">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="resetPasswordBtn">
                         <i class="ph ph-key"></i>
                         Tetapkan Semula
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <i class="ph ph-info" id="toastIcon"></i>
-        <span id="toastMessage">Message</span>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="ph ph-info me-2" id="toastIcon"></i>
+                <strong class="me-auto">Notifikasi</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                Message
+            </div>
+        </div>
     </div>
 
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script type="module">
         import { auth, db, signOutUser } from './firebase-init.js';
         import { onAuthStateChanged, updatePassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -1045,7 +355,7 @@
         const loadingOverlayEl = document.getElementById('loadingOverlay');
         const sidebarToggleEl = document.getElementById('sidebarToggle');
         const sidebarEl = document.getElementById('sidebar');
-        const sidebarOverlayEl = document.getElementById('sidebarOverlay'); // PWA: New overlay element
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay');
         
         // Table Elements
         const membersTableEl = document.getElementById('membersTable');
@@ -1070,12 +380,9 @@
         const resetPasswordFormEl = document.getElementById('resetPasswordForm');
         
         // Button Elements
-        const closeEditModalEl = document.getElementById('closeEditModal');
-        const closeCreateAccountModalEl = document.getElementById('closeCreateAccountModal');
-        const closeResetPasswordModalEl = document.getElementById('closeResetPasswordModal');
-        const cancelEditEl = document.getElementById('cancelEdit');
-        const cancelCreateAccountEl = document.getElementById('cancelCreateAccount');
-        const cancelResetPasswordEl = document.getElementById('cancelResetPassword');
+        const saveMemberBtnEl = document.getElementById('saveMemberBtn');
+        const createAccountBtnEl = document.getElementById('createAccountBtn');
+        const resetPasswordBtnEl = document.getElementById('resetPasswordBtn');
         
         // Toast notification elements
         const toastEl = document.getElementById('toast');
@@ -1093,6 +400,12 @@
         let totalMembers = 0;
         let allMembers = [];
         let filteredMembers = [];
+        
+        // Bootstrap modals
+        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        const createAccountModal = new bootstrap.Modal(document.getElementById('createAccountModal'));
+        const resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+        const toast = new bootstrap.Toast(document.getElementById('toast'));
 
         // Show loading overlay
         const showLoading = () => {
@@ -1114,25 +427,20 @@
             // Set appropriate class and icon based on type
             switch(type) {
                 case 'success':
-                    toastEl.classList.add('success');
+                    toastEl.classList.add('bg-success', 'text-white');
                     toastIconEl.className = 'ph ph-check-circle';
                     break;
                 case 'error':
-                    toastEl.classList.add('error');
+                    toastEl.classList.add('bg-danger', 'text-white');
                     toastIconEl.className = 'ph ph-warning-circle';
                     break;
                 default:
-                    toastEl.classList.add('info');
+                    toastEl.classList.add('bg-primary', 'text-white');
                     toastIconEl.className = 'ph ph-info';
             }
             
             // Show toast
-            toastEl.classList.add('show');
-            
-            // Hide after 3 seconds
-            setTimeout(() => {
-                toastEl.classList.remove('show');
-            }, 3000);
+            toast.show();
         };
 
         // PWA: Toggle sidebar for mobile with overlay
@@ -1246,7 +554,7 @@
                 const querySnapshot = await getDocs(q);
                 
                 if (querySnapshot.empty) {
-                    membersTableEl.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tiada ahli dijumpai.</td></tr>';
+                    membersTableEl.innerHTML = '<tr><td colspan="8" class="text-center">Tiada ahli dijumpai.</td></tr>';
                     hideLoading();
                     return;
                 }
@@ -1264,7 +572,7 @@
                 
             } catch (error) {
                 console.error("Ralat memuatkan data ahli:", error);
-                membersTableEl.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--danger);">Ralat memuatkan data ahli. Sila cuba lagi.</td></tr>';
+                membersTableEl.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Ralat memuatkan data ahli. Sila cuba lagi.</td></tr>';
                 showToast("Ralat memuatkan data ahli: " + error.message, "error");
                 hideLoading();
             }
@@ -1296,14 +604,14 @@
             // Render table
             membersTableEl.innerHTML = '';
             
-            if (paginatedMembers.length ===0) {
-                membersTableEl.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tiada ahli yang sepadan dengan kriteria carian.</td></tr>';
+            if (paginatedMembers.length === 0) {
+                membersTableEl.innerHTML = '<tr><td colspan="8" class="text-center">Tiada ahli yang sepadan dengan kriteria carian.</td></tr>';
             } else {
                 paginatedMembers.forEach(member => {
-                    const statusClass = member.status && member.status.toLowerCase() === 'aktif' ? 'status-badge active' : 'status-badge inactive';
+                    const statusClass = member.status && member.status.toLowerCase() === 'aktif' ? 'bg-success' : 'bg-danger';
                     const statusText = member.status && member.status.toLowerCase() === 'aktif' ? 'Aktif' : 'Tidak Aktif';
                     
-                    const roleClass = member.role && member.role.toLowerCase() === 'admin' ? 'role-badge admin' : 'role-badge';
+                    const roleClass = member.role && member.role.toLowerCase() === 'admin' ? 'bg-warning' : 'bg-secondary';
                     const roleText = member.role && member.role.toLowerCase() === 'admin' ? 'Admin' : 'Ahli';
                     
                     const address = member.houseNumber && member.streetName 
@@ -1317,21 +625,21 @@
                             <td>${member.phone || 'Tiada Telefon'}</td>
                             <td>${address}</td>
                             <td>${member.memberRank || 'Ahli Biasa'}</td>
-                            <td><span class="${statusClass}">${statusText}</span></td>
-                            <td><span class="${roleClass}">${roleText}</span></td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                            <td><span class="badge ${roleClass}">${roleText}</span></td>
                             <td>
-                                <button class="btn btn-outline" onclick="editMember('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editMember('${member.id}')">
                                     <i class="ph ph-pencil"></i>
                                 </button>
                                 ${!member.hasLoginAccount ? 
-                                    `<button class="btn btn-success" onclick="createAccount('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                    `<button class="btn btn-sm btn-success me-1" onclick="createAccount('${member.id}')">
                                         <i class="ph ph-user-plus"></i>
                                     </button>` : ''
                                 }
-                                <button class="btn btn-warning" onclick="resetPassword('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                <button class="btn btn-sm btn-warning me-1" onclick="resetPassword('${member.id}')">
                                     <i class="ph ph-key"></i>
                                 </button>
-                                <button class="btn btn-danger" onclick="deleteMember('${member.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')">
                                     <i class="ph ph-trash"></i>
                                 </button>
                             </td>
@@ -1357,14 +665,14 @@
             if (totalPages <= 5) {
                 // Show all page numbers if total pages is 5 or less
                 for (let i = 1; i <= totalPages; i++) {
-                    pageNumbersHTML += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                    pageNumbersHTML += `<button class="btn ${i === currentPage ? 'btn-primary' : 'btn-outline-secondary'} me-1" data-page="${i}">${i}</button>`;
                 }
             } else {
                 // Show first page, current page, and last page with ellipsis
-                pageNumbersHTML += `<button class="${1 === currentPage ? 'active' : ''}" data-page="1">1</button>`;
+                pageNumbersHTML += `<button class="btn ${1 === currentPage ? 'btn-primary' : 'btn-outline-secondary'} me-1" data-page="1">1</button>`;
                 
                 if (currentPage > 3) {
-                    pageNumbersHTML += '<span>...</span>';
+                    pageNumbersHTML += '<span class="px-2">...</span>';
                 }
                 
                 // Show pages around current page
@@ -1372,15 +680,15 @@
                 const endPage = Math.min(totalPages - 1, currentPage + 1);
                 
                 for (let i = startPage; i <= endPage; i++) {
-                    pageNumbersHTML += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                    pageNumbersHTML += `<button class="btn ${i === currentPage ? 'btn-primary' : 'btn-outline-secondary'} me-1" data-page="${i}">${i}</button>`;
                 }
                 
                 if (currentPage < totalPages - 2) {
-                    pageNumbersHTML += '<span>...</span>';
+                    pageNumbersHTML += '<span class="px-2">...</span>';
                 }
                 
                 if (totalPages > 1) {
-                    pageNumbersHTML += `<button class="${totalPages === currentPage ? 'active' : ''}" data-page="${totalPages}">${totalPages}</button>`;
+                    pageNumbersHTML += `<button class="btn ${totalPages === currentPage ? 'btn-primary' : 'btn-outline-secondary'} me-1" data-page="${totalPages}">${totalPages}</button>`;
                 }
             }
             
@@ -1423,7 +731,7 @@
                 document.getElementById('editRole').value = member.role || 'member';
                 
                 hideLoading();
-                editModalEl.classList.add('active');
+                editModal.show();
                 
             } catch (error) {
                 console.error("Ralat memuatkan data ahli:", error);
@@ -1433,9 +741,7 @@
         };
 
         // --- FUNGSI 6: SIMPAN PERUBAHAN AHLI ---
-        const saveMemberChanges = async (e) => {
-            e.preventDefault();
-            
+        const saveMemberChanges = async () => {
             try {
                 showLoading();
                 
@@ -1464,7 +770,7 @@
                 });
                 
                 // Close modal and refresh data
-                editModalEl.classList.remove('active');
+                editModal.hide();
                 await fetchMembers();
                 
                 hideLoading();
@@ -1500,7 +806,7 @@
                 document.getElementById('createAccountConfirmPassword').value = '';
                 
                 hideLoading();
-                createAccountModalEl.classList.add('active');
+                createAccountModal.show();
                 
             } catch (error) {
                 console.error("Ralat memuatkan data ahli:", error);
@@ -1510,9 +816,7 @@
         };
 
         // --- FUNGSI 8: HANTER CIPTA AKAUN ---
-        const submitCreateAccount = async (e) => {
-            e.preventDefault();
-            
+        const submitCreateAccount = async () => {
             try {
                 showLoading();
                 
@@ -1546,7 +850,7 @@
                 });
                 
                 // Close modal and refresh data
-                createAccountModalEl.classList.remove('active');
+                createAccountModal.hide();
                 createAccountFormEl.reset();
                 await fetchMembers();
                 
@@ -1587,7 +891,7 @@
                 document.getElementById('resetPasswordConfirm').value = '';
                 
                 hideLoading();
-                resetPasswordModalEl.classList.add('active');
+                resetPasswordModal.show();
                 
             } catch (error) {
                 console.error("Ralat memuatkan data ahli:", error);
@@ -1597,9 +901,7 @@
         };
 
         // --- FUNGSI 10: HANTER TETAPKAN SEMULA KATA LALUAN ---
-        const submitResetPassword = async (e) => {
-            e.preventDefault();
-            
+        const submitResetPassword = async () => {
             try {
                 showLoading();
                 
@@ -1643,7 +945,7 @@
                 await sendPasswordResetEmail(auth, member.email);
                 
                 // Close modal
-                resetPasswordModalEl.classList.remove('active');
+                resetPasswordModal.hide();
                 resetPasswordFormEl.reset();
                 
                 hideLoading();
@@ -1735,53 +1037,9 @@
         });
         
         // Modal event listeners
-        closeEditModalEl.addEventListener('click', () => {
-            editModalEl.classList.remove('active');
-        });
-        
-        closeCreateAccountModalEl.addEventListener('click', () => {
-            createAccountModalEl.classList.remove('active');
-        });
-        
-        closeResetPasswordModalEl.addEventListener('click', () => {
-            resetPasswordModalEl.classList.remove('active');
-        });
-        
-        cancelEditEl.addEventListener('click', () => {
-            editModalEl.classList.remove('active');
-        });
-        
-        cancelCreateAccountEl.addEventListener('click', () => {
-            createAccountModalEl.classList.remove('active');
-        });
-        
-        cancelResetPasswordEl.addEventListener('click', () => {
-            resetPasswordModalEl.classList.remove('active');
-        });
-        
-        // Close modals when clicking outside
-        editModalEl.addEventListener('click', (e) => {
-            if (e.target === editModalEl) {
-                editModalEl.classList.remove('active');
-            }
-        });
-        
-        createAccountModalEl.addEventListener('click', (e) => {
-            if (e.target === createAccountModalEl) {
-                createAccountModalEl.classList.remove('active');
-            }
-        });
-        
-        resetPasswordModalEl.addEventListener('click', (e) => {
-            if (e.target === resetPasswordModalEl) {
-                resetPasswordModalEl.classList.remove('active');
-            }
-        });
-        
-        // Form submissions
-        editFormEl.addEventListener('submit', saveMemberChanges);
-        createAccountFormEl.addEventListener('submit', submitCreateAccount);
-        resetPasswordFormEl.addEventListener('submit', submitResetPassword);
+        saveMemberBtnEl.addEventListener('click', saveMemberChanges);
+        createAccountBtnEl.addEventListener('click', submitCreateAccount);
+        resetPasswordBtnEl.addEventListener('click', submitResetPassword);
 
         // Event listener untuk Log Keluar
         document.getElementById('logoutBtn').addEventListener('click', () => {
