@@ -420,7 +420,6 @@
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- JavaScript code will remain the same -->
     <script type="module">
         import { auth, db, signOutUser } from './firebase-init.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -446,9 +445,9 @@
         const loadingOverlayEl = document.getElementById('loadingOverlay');
         const sidebarToggleEl = document.getElementById('sidebarToggle');
         const sidebarEl = document.getElementById('sidebar');
-        const sidebarOverlayEl = document.getElementById('sidebarOverlay'); // PWA: New overlay element
-        const refreshDataBtn = document.getElementById('refreshDataBtn'); // PWA: Refresh Button
-        const toastContainerEl = document.getElementById('toastContainer'); // PWA: Toast Container
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+        const refreshDataBtn = document.getElementById('refreshDataBtn');
+        const toastContainerEl = document.getElementById('toastContainer');
         
         // Elemen Admin
         const adminMenuEl = document.getElementById('adminMenu');
@@ -606,7 +605,7 @@
                         adminMenuEl.style.display = 'none';
                         adminBadgeEl.style.display = 'none';
                         recentIncomeSectionEl.parentElement.style.display = 'none';
-                        addIncomeBtnEl.parentElement.style.display = 'none';
+                        addExpenseBtnEl.parentElement.style.display = 'none';
                         pendingMembersSectionEl.style.display = 'none';
                     }
 
@@ -1063,13 +1062,11 @@
                 ]);
                 
                 hideLoading();
-                // PWA: Ganti alert dengan showToast
                 showToast('Pendapatan berjaya ditambah!', 'success');
                 
             } catch (error) {
                 console.error("Ralat menambah pendapatan:", error);
                 hideLoading();
-                // PWA: Ganti alert dengan showToast
                 showToast('Ralat menambah pendapatan. Sila cuba lagi.', 'error');
             }
         };
@@ -1097,13 +1094,11 @@
                 ]);
                 
                 hideLoading();
-                // PWA: Ganti alert dengan showToast
                 showToast('Perbelanjaan berjaya ditambah!', 'success');
                 
             } catch (error) {
                 console.error("Ralat menambah perbelanjaan:", error);
                 hideLoading();
-                // PWA: Ganti alert dengan showToast
                 showToast('Ralat menambah perbelanjaan. Sila cuba lagi.', 'error');
             }
         };
@@ -1126,7 +1121,7 @@
                     fetchAndRenderAnnouncements(),
                     fetchAndRenderRecentIncome(),
                     fetchAndRenderRecentExpenses(),
-                    fetchAndRenderPendingMembers() // Add this to refresh pending members
+                    fetchAndRenderPendingMembers()
                 ]);
                 showToast('Data telah dikemas kini!', 'success');
             } catch (error) {
@@ -1233,9 +1228,9 @@
                     calculateNetBalance(),
                     fetchAndRenderMemberList(), 
                     fetchAndRenderAnnouncements(),
-                    fetchAndRenderRecentIncome(), // Safe to call, will only render if admin
-                    fetchAndRenderRecentExpenses(), // Safe to call, will only render if admin
-                    fetchAndRenderPendingMembers() // Safe to call, will only render if admin
+                    fetchAndRenderRecentIncome(),
+                    fetchAndRenderRecentExpenses(),
+                    fetchAndRenderPendingMembers()
                 ]).then(() => {
                     hideLoading();
                 }).catch((error) => {

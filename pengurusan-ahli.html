@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     
     <!-- PWA: Meta Tags untuk PWA -->
     <meta name="theme-color" content="#0f172a">
@@ -21,7 +21,802 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="pengurusan-ahli.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --dark: #1e293b;
+            --light: #f1f5f9;
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 70px;
+            --header-height: 70px;
+            --mobile-header-height: 60px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: #60a5fa;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Sidebar */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: var(--dark);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1002;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand i {
+            margin-right: 15px;
+        }
+
+        .brand span {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .menu-group {
+            margin-bottom: 25px;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.5;
+            margin-bottom: 10px;
+        }
+
+        .menu {
+            list-style: none;
+        }
+
+        .menu li {
+            margin-bottom: 5px;
+        }
+
+        .menu a {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .menu a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .menu a.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .menu a i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        /* Dashboard Container */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .welcome-banner p {
+            font-size: 1rem;
+            opacity: 0.9;
+            max-width: 600px;
+        }
+
+        /* Cards */
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .card h3 i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+
+        /* Search and Filter */
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary);
+        }
+
+        .search-box input {
+            padding-left: 45px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            height: 45px;
+        }
+
+        .form-select {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            height: 45px;
+        }
+
+        .btn {
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            height: 45px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .btn-outline-secondary {
+            border-color: #e2e8f0;
+            color: var(--secondary);
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* Table */
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .table td {
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pagination button {
+            min-width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background-color: white;
+            color: var(--secondary);
+            font-weight: 500;
+        }
+
+        .pagination button.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Modal */
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #f1f5f9;
+            padding: 20px 25px;
+        }
+
+        .modal-title {
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #f1f5f9;
+            padding: 15px 25px;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 12px 15px;
+            height: auto;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Toast */
+        .toast-container {
+            z-index: 9999;
+        }
+
+        .toast {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast-header {
+            background-color: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Media Queries */
+        @media (min-width: 992px) {
+            .sidebar-toggle {
+                display: none;
+            }
+
+            .sidebar {
+                transform: translateX(0);
+                z-index: 100;
+            }
+
+            .main-content {
+                margin-left: var(--sidebar-width);
+                padding: 30px;
+            }
+
+            header {
+                padding: 20px 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+                padding-top: 70px;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 15px;
+            }
+
+            .user-profile {
+                margin-top: 15px;
+                align-self: flex-end;
+            }
+
+            .welcome-banner {
+                padding: 20px;
+            }
+
+            .welcome-banner h1 {
+                font-size: 1.5rem;
+            }
+
+            .welcome-banner p {
+                font-size: 0.9rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .card h3 {
+                font-size: 1.1rem;
+            }
+
+            .btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .table th, .table td {
+                padding: 8px 5px;
+            }
+
+            .table th:nth-child(4),
+            .table td:nth-child(4) {
+                display: none;
+            }
+
+            .table th:nth-child(5),
+            .table td:nth-child(5) {
+                display: none;
+            }
+
+            .modal-dialog {
+                margin: 10px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .form-row {
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .welcome-banner {
+                padding: 15px;
+            }
+
+            .welcome-banner h1 {
+                font-size: 1.3rem;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .row.mb-3 {
+                flex-direction: column;
+            }
+
+            .row.mb-3 > div {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+
+            .pagination button {
+                min-width: 35px;
+                height: 35px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Mobile-friendly action buttons */
+        @media (max-width: 768px) {
+            .btn-sm {
+                padding: 5px 8px;
+                font-size: 0.8rem;
+            }
+
+            .table .btn-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3px;
+            }
+        }
+
+        /* Mobile-friendly table */
+        @media (max-width: 576px) {
+            .table-responsive {
+                border: none;
+            }
+
+            .table {
+                display: block;
+            }
+
+            .table thead {
+                display: none;
+            }
+
+            .table tbody {
+                display: block;
+            }
+
+            .table tr {
+                display: block;
+                margin-bottom: 15px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 15px;
+                border-bottom: 1px solid #f1f5f9;
+            }
+
+            .table td:last-child {
+                border-bottom: none;
+            }
+
+            .table td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--dark);
+                flex: 1;
+            }
+
+            .table td:nth-child(1):before {
+                content: "Nama";
+            }
+
+            .table td:nth-child(2):before {
+                content: "Emel";
+            }
+
+            .table td:nth-child(3):before {
+                content: "Telefon";
+            }
+
+            .table td:nth-child(4):before {
+                content: "Alamat";
+            }
+
+            .table td:nth-child(5):before {
+                content: "Jawatan";
+            }
+
+            .table td:nth-child(6):before {
+                content: "Status";
+            }
+
+            .table td:nth-child(7):before {
+                content: "Peranan";
+            }
+
+            .table td:nth-child(8):before {
+                content: "Tindakan";
+            }
+
+            .table td span {
+                flex: 2;
+                text-align: right;
+            }
+
+            .table td:last-child {
+                justify-content: center;
+            }
+
+            .table td:last-child span {
+                flex: unset;
+                text-align: center;
+            }
+        }
+
+        /* Loading state for buttons */
+        .btn.loading {
+            position: relative;
+            color: transparent;
+            pointer-events: none;
+        }
+
+        .btn.loading:after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Touch-friendly elements */
+        @media (hover: none) {
+            .btn:active {
+                transform: scale(0.95);
+            }
+
+            .menu a:active {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        /* Improved focus states for accessibility */
+        .btn:focus,
+        .form-control:focus,
+        .form-select:focus {
+            outline: none;
+        }
+
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .skeleton-text {
+            height: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .skeleton-title {
+            height: 1.2rem;
+            width: 40%;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+    </style>
     
     <script type="module" src="./firebase-init.js"></script> 
 </head>
@@ -277,6 +1072,7 @@
                         <div class="mb-3">
                             <label for="createAccountPassword" class="form-label">Kata Laluan</label>
                             <input type="password" class="form-control" id="createAccountPassword" required>
+                            <div class="form-text">Kata laluan mesti sekurang-kurangnya 6 aksara.</div>
                         </div>
                         <div class="mb-3">
                             <label for="createAccountConfirmPassword" class="form-label">Sahkan Kata Laluan</label>
@@ -308,6 +1104,7 @@
                         <div class="mb-3">
                             <label for="resetPasswordNew" class="form-label">Kata Laluan Baharu</label>
                             <input type="password" class="form-control" id="resetPasswordNew" required>
+                            <div class="form-text">Kata laluan mesti sekurang-kurangnya 6 aksara.</div>
                         </div>
                         <div class="mb-3">
                             <label for="resetPasswordConfirm" class="form-label">Sahkan Kata Laluan Baharu</label>
@@ -401,6 +1198,9 @@
         let allMembers = [];
         let filteredMembers = [];
         
+        // Network status
+        let isOnline = navigator.onLine;
+        
         // Bootstrap modals
         const editModal = new bootstrap.Modal(document.getElementById('editModal'));
         const createAccountModal = new bootstrap.Modal(document.getElementById('createAccountModal'));
@@ -434,6 +1234,10 @@
                     toastEl.classList.add('bg-danger', 'text-white');
                     toastIconEl.className = 'ph ph-warning-circle';
                     break;
+                case 'warning':
+                    toastEl.classList.add('bg-warning', 'text-white');
+                    toastIconEl.className = 'ph ph-warning';
+                    break;
                 default:
                     toastEl.classList.add('bg-primary', 'text-white');
                     toastIconEl.className = 'ph ph-info';
@@ -442,6 +1246,26 @@
             // Show toast
             toast.show();
         };
+
+        // Check network status
+        const checkNetworkStatus = () => {
+            isOnline = navigator.onLine;
+            
+            if (!isOnline) {
+                showToast("Anda sedang luar talian. Sesetengah fungsi mungkin tidak tersedia.", "warning");
+            }
+        };
+
+        // Add network status event listeners
+        window.addEventListener('online', () => {
+            isOnline = true;
+            showToast("Sambungan internet dipulihkan.", "success");
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            showToast("Sambungan internet terputus. Sesetengah fungsi mungkin tidak tersedia.", "warning");
+        });
 
         // PWA: Toggle sidebar for mobile with overlay
         const toggleSidebar = () => {
@@ -515,6 +1339,28 @@
             return new Date(date).toLocaleDateString('ms-MY', options);
         };
 
+        // Validate email format
+        const validateEmail = (email) => {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        };
+
+        // Validate phone number (Malaysian format)
+        const validatePhone = (phone) => {
+            const re = /^(\+?6?01)[0-46-9]-*[0-9]{7,8}$/;
+            return re.test(phone);
+        };
+
+        // Debounce function for search input
+        const debounce = (func, wait) => {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        };
+
         // --- FUNGSI 1: KEMAS KINI HEADER PROFIL ---
         const updateHeaderProfile = async (uid) => {
             try {
@@ -544,6 +1390,11 @@
         // --- FUNGSI 2: MUATKAN DATA AHLI ---
         const fetchMembers = async () => {
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat memuatkan data terkini.", "warning");
+                    return;
+                }
+                
                 showLoading();
                 
                 const q = query(
@@ -618,34 +1469,39 @@
                         ? `${member.houseNumber}, ${member.streetName}` 
                         : (member.houseNumber || member.streetName || 'Tiada');
                     
-                    const row = `
-                        <tr>
-                            <td>${member.fullName || 'Tiada Nama'}</td>
-                            <td>${member.email || 'Tiada Emel'}</td>
-                            <td>${member.phone || 'Tiada Telefon'}</td>
-                            <td>${address}</td>
-                            <td>${member.memberRank || 'Ahli Biasa'}</td>
-                            <td><span class="badge ${statusClass}">${statusText}</span></td>
-                            <td><span class="badge ${roleClass}">${roleText}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editMember('${member.id}')">
+                    // Create mobile-friendly table row
+                    const row = document.createElement('tr');
+                    
+                    // Add data attributes for mobile view
+                    row.innerHTML = `
+                        <td data-label="Nama">${member.fullName || 'Tiada Nama'}</td>
+                        <td data-label="Emel">${member.email || 'Tiada Emel'}</td>
+                        <td data-label="Telefon">${member.phone || 'Tiada Telefon'}</td>
+                        <td data-label="Alamat">${address}</td>
+                        <td data-label="Jawatan">${member.memberRank || 'Ahli Biasa'}</td>
+                        <td data-label="Status"><span class="badge ${statusClass}">${statusText}</span></td>
+                        <td data-label="Peranan"><span class="badge ${roleClass}">${roleText}</span></td>
+                        <td data-label="Tindakan">
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editMember('${member.id}')" title="Kemaskini">
                                     <i class="ph ph-pencil"></i>
                                 </button>
                                 ${!member.hasLoginAccount ? 
-                                    `<button class="btn btn-sm btn-success me-1" onclick="createAccount('${member.id}')">
+                                    `<button class="btn btn-sm btn-success me-1" onclick="createAccount('${member.id}')" title="Cipta Akaun">
                                         <i class="ph ph-user-plus"></i>
                                     </button>` : ''
                                 }
-                                <button class="btn btn-sm btn-warning me-1" onclick="resetPassword('${member.id}')">
+                                <button class="btn btn-sm btn-warning me-1" onclick="resetPassword('${member.id}')" title="Tetapkan Semula Kata Laluan">
                                     <i class="ph ph-key"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')">
+                                <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')" title="Padam">
                                     <i class="ph ph-trash"></i>
                                 </button>
-                            </td>
-                        </tr>
+                            </div>
+                        </td>
                     `;
-                    membersTableEl.innerHTML += row;
+                    
+                    membersTableEl.appendChild(row);
                 });
             }
             
@@ -706,6 +1562,11 @@
         // --- FUNGSI 5: EDIT AHLI ---
         window.editMember = async (memberId) => {
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat mengedit ahli.", "warning");
+                    return;
+                }
+                
                 showLoading();
                 
                 const docRef = doc(db, "users", memberId);
@@ -741,8 +1602,19 @@
         };
 
         // --- FUNGSI 6: SIMPAN PERUBAHAN AHLI ---
-        const saveMemberChanges = async () => {
+        let saveMemberChanges = async () => {
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat menyimpan perubahan.", "warning");
+                    return;
+                }
+                
+                // Validate form
+                if (!editFormEl.checkValidity()) {
+                    editFormEl.reportValidity();
+                    return;
+                }
+                
                 showLoading();
                 
                 // Get form values
@@ -754,6 +1626,20 @@
                 const memberRank = document.getElementById('editMemberRank').value;
                 const status = document.getElementById('editStatus').value;
                 const role = document.getElementById('editRole').value;
+                
+                // Validate email
+                if (!validateEmail(email)) {
+                    showToast("Sila masukkan alamat emel yang sah.", "error");
+                    hideLoading();
+                    return;
+                }
+                
+                // Validate phone
+                if (!validatePhone(phone)) {
+                    showToast("Sila masukkan nombor telefon yang sah.", "error");
+                    hideLoading();
+                    return;
+                }
                 
                 // Update member data in Firestore
                 const docRef = doc(db, "users", currentMemberId);
@@ -786,6 +1672,11 @@
         // --- FUNGSI 7: CIPTA AKAUN ---
         window.createAccount = async (memberId) => {
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat mencipta akaun.", "warning");
+                    return;
+                }
+                
                 showLoading();
                 
                 const docRef = doc(db, "users", memberId);
@@ -816,14 +1707,32 @@
         };
 
         // --- FUNGSI 8: HANTER CIPTA AKAUN ---
-        const submitCreateAccount = async () => {
+        let submitCreateAccount = async () => {
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat mencipta akaun.", "warning");
+                    return;
+                }
+                
+                // Validate form
+                if (!createAccountFormEl.checkValidity()) {
+                    createAccountFormEl.reportValidity();
+                    return;
+                }
+                
                 showLoading();
                 
                 // Get form values
                 const email = document.getElementById('createAccountEmail').value.trim();
                 const password = document.getElementById('createAccountPassword').value;
                 const confirmPassword = document.getElementById('createAccountConfirmPassword').value;
+                
+                // Validate email
+                if (!validateEmail(email)) {
+                    showToast("Sila masukkan alamat emel yang sah.", "error");
+                    hideLoading();
+                    return;
+                }
                 
                 // Validate passwords
                 if (password !== confirmPassword) {
@@ -872,6 +1781,11 @@
         // --- FUNGSI 9: TETAPKAN SEMULA KATA LALUAN ---
         window.resetPassword = async (memberId) => {
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat menetapkan semula kata laluan.", "warning");
+                    return;
+                }
+                
                 showLoading();
                 
                 const docRef = doc(db, "users", memberId);
@@ -901,8 +1815,19 @@
         };
 
         // --- FUNGSI 10: HANTER TETAPKAN SEMULA KATA LALUAN ---
-        const submitResetPassword = async () => {
+        let submitResetPassword = async () => {
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat menetapkan semula kata laluan.", "warning");
+                    return;
+                }
+                
+                // Validate form
+                if (!resetPasswordFormEl.checkValidity()) {
+                    resetPasswordFormEl.reportValidity();
+                    return;
+                }
+                
                 showLoading();
                 
                 // Get form values
@@ -965,6 +1890,11 @@
             }
             
             try {
+                if (!isOnline) {
+                    showToast("Anda sedang luar talian. Tidak dapat memadam ahli.", "warning");
+                    return;
+                }
+                
                 showLoading();
                 
                 // Get member data to check if user has login account
@@ -1004,11 +1934,13 @@
             fetchMembers();
         });
         
-        // Search and filter event listeners
-        searchInputEl.addEventListener('input', () => {
+        // Debounced search event listener
+        const debouncedSearch = debounce(() => {
             currentPage = 1; // Reset to first page when searching
             applyFiltersAndRender();
-        });
+        }, 300);
+        
+        searchInputEl.addEventListener('input', debouncedSearch);
         
         statusFilterEl.addEventListener('change', () => {
             currentPage = 1; // Reset to first page when filtering
@@ -1043,15 +1975,17 @@
 
         // Event listener untuk Log Keluar
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            showLoading();
-            signOutUser().then(() => {
-                hideLoading();
-                window.location.href = "index.html";
-            }).catch((error) => {
-                hideLoading();
-                console.error("Ralat log keluar:", error);
-                showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
-            });
+            if (confirm("Adakah anda pasti ingin log keluar?")) {
+                showLoading();
+                signOutUser().then(() => {
+                    hideLoading();
+                    window.location.href = "index.html";
+                }).catch((error) => {
+                    hideLoading();
+                    console.error("Ralat log keluar:", error);
+                    showToast("Ralat semasa log keluar. Sila cuba lagi.", "error");
+                });
+            }
         });
 
         // Auth State Change Listener
@@ -1060,6 +1994,9 @@
                 // Pengguna log masuk
                 currentUser = user;
                 showLoading();
+                
+                // Check network status
+                checkNetworkStatus();
                 
                 // Load all data in parallel
                 Promise.all([
@@ -1090,6 +2027,68 @@
                     });
             });
         }
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            // ESC key to close modals
+            if (e.key === 'Escape') {
+                if (editModal._isShown) {
+                    editModal.hide();
+                }
+                if (createAccountModal._isShown) {
+                    createAccountModal.hide();
+                }
+                if (resetPasswordModal._isShown) {
+                    resetPasswordModal.hide();
+                }
+                if (sidebarEl.classList.contains('active')) {
+                    sidebarEl.classList.remove('active');
+                    sidebarOverlayEl.classList.remove('active');
+                }
+            }
+        });
+
+        // Add loading state to buttons
+        const addLoadingState = (button) => {
+            button.classList.add('loading');
+            button.disabled = true;
+        };
+
+        const removeLoadingState = (button) => {
+            button.classList.remove('loading');
+            button.disabled = false;
+        };
+
+        // Update button states during async operations
+        const originalSaveMemberChanges = saveMemberChanges;
+        saveMemberChanges = async () => {
+            addLoadingState(saveMemberBtnEl);
+            try {
+                await originalSaveMemberChanges();
+            } finally {
+                removeLoadingState(saveMemberBtnEl);
+            }
+        };
+
+        const originalSubmitCreateAccount = submitCreateAccount;
+        submitCreateAccount = async () => {
+            addLoadingState(createAccountBtnEl);
+            try {
+                await originalSubmitCreateAccount();
+            } finally {
+                removeLoadingState(createAccountBtnEl);
+            }
+        };
+
+        const originalSubmitResetPassword = submitResetPassword;
+        submitResetPassword = async () => {
+            addLoadingState(resetPasswordBtnEl);
+            try {
+                await originalSubmitResetPassword();
+            } finally {
+                removeLoadingState(resetPasswordBtnEl);
+            }
+        };
     </script>
 </body>
 </html>

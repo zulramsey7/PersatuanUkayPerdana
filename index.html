@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
+    <!-- SEO: Meta Tags -->
+    <meta name="description" content="Persatuan Penduduk UKAY PERDANA - Wadah perpaduan dan kebajikan untuk membina komuniti yang sejahtera dan saling membantu. Sertai kami hari ini!">
+    <meta name="keywords" content="persatuan penduduk, ukay perdana, komuniti, kebajikan, perpaduan, ampang">
+    <meta name="author" content="Persatuan Penduduk UKAY PERDANA">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Persatuan Penduduk UKAY PERDANA">
+    <meta property="og:description" content="Wadah perpaduan dan kebajikan untuk membina komuniti yang sejahtera dan saling membantu.">
+    <meta property="og:image" content="https://i.ibb.co/ksVDkkqn/Whats-App-Image-2025-08-21-at-14-09-04.jpg">
+    <meta property="og:url" content="https://persatuanukayperdana.com">
+    <meta property="og:type" content="website">
+    
     <!-- PWA: Meta Tags untuk PWA -->
     <meta name="theme-color" content="#0f172a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -18,7 +30,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- PWA: Preload Critical Resources -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
     <link rel="preload" href="https://unpkg.com/@phosphor-icons/web" as="script">
     
     <title>Persatuan UKAY PERDANA</title>
@@ -28,6 +41,36 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Persatuan Penduduk UKAY PERDANA",
+        "url": "https://persatuanukayperdana.com",
+        "logo": "https://i.ibb.co/bR6tMhrv/icon-512x512.png",
+        "description": "Wadah perpaduan dan kebajikan untuk membina komuniti yang sejahtera dan saling membantu.",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Jalan UKAY PERDANA",
+            "addressLocality": "Ampang",
+            "addressRegion": "Selangor",
+            "postalCode": "68000",
+            "addressCountry": "MY"
+        },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+6017-3304906",
+            "contactType": "customer service",
+            "availableLanguage": "Malay"
+        },
+        "sameAs": [
+            "https://facebook.com/ukayperdana",
+            "https://instagram.com/ukayperdana"
+        ]
+    }
+    </script>
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -39,30 +82,40 @@
     </div>
 
     <!-- PWA Install Prompt -->
-    <div class="install-prompt" id="installPrompt">
-        <i class="ph ph-download-simple" style="font-size: 1.5rem;"></i>
+    <div class="install-prompt" id="installPrompt" role="dialog" aria-labelledby="installPromptTitle">
+        <i class="ph ph-download-simple" style="font-size: 1.5rem;" aria-hidden="true"></i>
         <div>
-            <div style="font-weight: 600;">Pasang Aplikasi</div>
+            <div id="installPromptTitle" style="font-weight: 600;">Pasang Aplikasi</div>
             <div style="font-size: 0.8rem; opacity: 0.8;">Pasang aplikasi untuk pengalaman lebih baik</div>
         </div>
         <button class="btn btn-primary btn-sm" id="installBtn">Pasang</button>
-        <button class="btn-close btn-close-white" id="closeInstallPrompt"></button>
+        <button class="btn-close btn-close-white" id="closeInstallPrompt" aria-label="Tutup prom pemasangan"></button>
     </div>
 
     <!-- Offline Banner -->
-    <div class="offline-banner" id="offlineBanner">
-        <i class="ph ph-wifi-slash" style="vertical-align: middle; margin-right: 8px;"></i>
+    <div class="offline-banner" id="offlineBanner" role="alert">
+        <i class="ph ph-wifi-slash" style="vertical-align: middle; margin-right: 8px;" aria-hidden="true"></i>
         Anda sedang dalam mod luar talian. Sesetengah fungsi mungkin tidak tersedia.
     </div>
+
+    <!-- Dark Mode Toggle -->
+    <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggel mod gelap">
+        <i class="ph ph-moon" id="darkModeIcon"></i>
+    </button>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll ke atas">
+        <i class="ph ph-arrow-up"></i>
+    </button>
 
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="#home">
-                <i class="ph ph-house-line me-2" style="font-size: 1.5rem;"></i>
+            <a class="navbar-brand d-flex align-items-center" href="#home" aria-label="Halaman utama Persatuan UKAY PERDANA">
+                <i class="ph ph-house-line me-2" style="font-size: 1.5rem;" aria-hidden="true"></i>
                 <span>PERSATUAN UKAY PERDANA</span>
             </a>
-            <button class="navbar-toggler" type="button" id="mobileMenuToggle" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" id="mobileMenuToggle" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggel menu navigasi">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -75,6 +128,12 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#membership">Pakej Keahlian</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#testimonials">Testimoni</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#gallery">Galeri</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#register">Daftar</a>
@@ -98,9 +157,45 @@
                     <a href="#membership" class="btn btn-primary btn-lg">Pakej Keahlian</a>
                     <a href="#register" class="btn btn-danger btn-lg">Daftar Sekarang</a>
                     <button class="btn btn-success btn-lg" id="shareBtn">
-                        <i class="ph ph-share-network me-2"></i>
+                        <i class="ph ph-share-network me-2" aria-hidden="true"></i>
                         Kongsi
                     </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="section py-5 bg-light" id="statistics">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-3 col-6">
+                    <div class="stats-card">
+                        <i class="ph ph-users" style="font-size: 2rem; color: var(--accent);"></i>
+                        <div class="stats-number" data-target="500">0</div>
+                        <p class="mb-0">Ahli Berdaftar</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card">
+                        <i class="ph ph-calendar-check" style="font-size: 2rem; color: var(--accent);"></i>
+                        <div class="stats-number" data-target="24">0</div>
+                        <p class="mb-0">Aktiviti Tahunan</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card">
+                        <i class="ph ph-hand-heart" style="font-size: 2rem; color: var(--accent);"></i>
+                        <div class="stats-number" data-target="150">0</div>
+                        <p class="mb-0">Bantuan Diberikan</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card">
+                        <i class="ph ph-trophy" style="font-size: 2rem; color: var(--accent);"></i>
+                        <div class="stats-number" data-target="5">0</div>
+                        <p class="mb-0">Anugerah Diterima</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -119,10 +214,13 @@
                     <p>Persatuan Penduduk UKAY PERDANA ditubuhkan pada tahun <strong>2024</strong> sebagai satu platform rasmi untuk mewakili dan membela kepentingan seluruh penduduk di kawasan ini.</p>
                     <p><strong>Visi kami</strong> adalah untuk menjadi persatuan penduduk yang terulung dalam membangunkan komuniti yang selamat, harmoni dan sejahtera.</p>
                     <p><strong>Misi kami</strong> adalah untuk menjadi wadah perpaduan penduduk, menyediakan bantuan sosial, menganjurkan aktiviti komuniti yang membina, dan menjadi suara penduduk dalam isu-isu kejiranan.</p>
+                    <div class="mt-4">
+                        <a href="#membership" class="btn btn-outline-primary">Ketahui Lebih Lanjut</a>
+                    </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="about-image rounded overflow-hidden shadow">
-                        <img src="https://i.ibb.co/ksVDkkqn/Whats-App-Image-2025-08-21-at-14-09-04.jpg" alt="Gambar aktiviti persatuan" class="img-fluid">
+                        <img src="https://i.ibb.co/ksVDkkqn/Whats-App-Image-2025-08-21-at-14-09-04.jpg" alt="Gambar aktiviti persatuan" class="img-fluid" loading="lazy">
                     </div>
                 </div>
             </div>
@@ -147,37 +245,121 @@
                             </div>
                             <ul class="list-unstyled mb-4">
                                 <li class="mb-3 d-flex align-items-start">
-                                    <i class="ph ph-check-circle text-success me-2 mt-1"></i>
+                                    <i class="ph ph-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
                                     <span>Bantuan kewangan untuk musibah (kemalangan, kebakaran, banjir)</span>
                                 </li>
                                 <li class="mb-3 d-flex align-items-start">
-                                    <i class="ph ph-check-circle text-success me-2 mt-1"></i>
+                                    <i class="ph ph-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
                                     <span>Sumbangan ikhlas untuk kematian ahli keluarga</span>
                                 </li>
                                 <li class="mb-3 d-flex align-items-start">
-                                    <i class="ph ph-check-circle text-success me-2 mt-1"></i>
+                                    <i class="ph ph-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
                                     <span>Hadiah perkahwinan untuk ahli</span>
                                 </li>
                                 <li class="mb-3 d-flex align-items-start">
-                                    <i class="ph ph-check-circle text-success me-2 mt-1"></i>
+                                    <i class="ph ph-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
                                     <span>Hadiah kelahiran anak untuk ahli</span>
                                 </li>
                                 <li class="mb-3 d-flex align-items-start">
-                                    <i class="ph ph-check-circle text-success me-2 mt-1"></i>
+                                    <i class="ph ph-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
                                     <span>Akses kepada program dan aktiviti komuniti</span>
                                 </li>
                                 <li class="mb-3 d-flex align-items-start">
-                                    <i class="ph ph-check-circle text-success me-2 mt-1"></i>
+                                    <i class="ph ph-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
                                     <span>Bantuan kecemasan dan nasihat kejiranan</span>
                                 </li>
                                 <li class="mb-3 d-flex align-items-start">
-                                    <i class="ph ph-check-circle text-success me-2 mt-1"></i>
+                                    <i class="ph ph-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
                                     <span>Mewakili suara penduduk dalam isu tempatan</span>
                                 </li>
                             </ul>
                             <a href="register.html" class="btn btn-primary w-100">Pilih Pakej</a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="section py-5" id="testimonials">
+        <div class="container">
+            <div class="section-title text-center mb-5">
+                <h2 class="display-5 fw-bold">Testimoni Ahli</h2>
+                <p class="lead text-muted">Apa kata ahli kami tentang persatuan</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="testimonial">
+                        <div class="testimonial-content">
+                            <p>"Saya sangat berbangga menjadi ahli Persatuan UKAY PERDANA. Bantuan yang diberikan semasa kemalangan keluarga saya sangat membantu."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Ahmad bin Ismail" class="testimonial-avatar" loading="lazy">
+                            <div>
+                                <h5 class="mb-0">Ahmad bin Ismail</h5>
+                                <p class="text-muted mb-0">Ahli sejak 2024</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="testimonial">
+                        <div class="testimonial-content">
+                            <p>"Program-program yang dianjurkan oleh persatuan sangat membantu mengeratkan silaturahim antara jiran di kawasan kejiranan saya."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Siti Aishah binti Rahman" class="testimonial-avatar" loading="lazy">
+                            <div>
+                                <h5 class="mb-0">Siti Aishah binti Rahman</h5>
+                                <p class="text-muted mb-0">Ahli sejak 2024</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="testimonial">
+                        <div class="testimonial-content">
+                            <p>"Persatuan ini telah membantu saya menyelesaikan masalah longkang tersumbat di kawasan perumahan saya. Terima kasih atas bantuan."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://randomuser.me/api/portraits/men/67.jpg" alt="Mohd Razif bin Hassan" class="testimonial-avatar" loading="lazy">
+                            <div>
+                                <h5 class="mb-0">Mohd Razif bin Hassan</h5>
+                                <p class="text-muted mb-0">Ahli sejak 2024</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section class="section py-5 bg-light" id="gallery">
+        <div class="container">
+            <div class="section-title text-center mb-5">
+                <h2 class="display-5 fw-bold">Galeri Aktiviti</h2>
+                <p class="lead text-muted">Gambar-gambar aktiviti persatuan kami</p>
+            </div>
+            <div class="gallery">
+                <div class="gallery-item">
+                    <img src="https://i.ibb.co/ksVDkkqn/Whats-App-Image-2025-08-21-at-14-09-04.jpg" alt="Aktiviti gotong-royong" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Sambutan Hari Raya" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Program kesihatan" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Kelas komuniti" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Sukaneka komuniti" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Majlis pertemuan ahli" loading="lazy">
                 </div>
             </div>
         </div>
@@ -192,7 +374,7 @@
                 <div class="d-flex justify-content-center gap-3 flex-wrap">
                     <a href="register.html" class="btn btn-danger btn-lg">Daftar Sekarang</a>
                     <button class="btn btn-success btn-lg" id="shareBtn2">
-                        <i class="ph ph-share-network me-2"></i>
+                        <i class="ph ph-share-network me-2" aria-hidden="true"></i>
                         Kongsi
                     </button>
                 </div>
@@ -209,7 +391,7 @@
                     <p>Wadah perpaduan dan kebajikan untuk komuniti UKAY PERDANA.</p>
                     <div class="mt-3">
                         <button class="btn btn-light text-dark" id="shareBtn3">
-                            <i class="ph ph-share-network me-2"></i>
+                            <i class="ph ph-share-network me-2" aria-hidden="true"></i>
                             Kongsi Laman Ini
                         </button>
                     </div>
@@ -227,27 +409,35 @@
                     <h3 class="h4 mb-3">Hubungi Kami</h3>
                     <ul class="list-unstyled">
                         <li class="mb-2">
-                            <i class="ph ph-envelope me-2"></i>
-                            persatuanukayperdana@gmail.com
+                            <i class="ph ph-envelope me-2" aria-hidden="true"></i>
+                            <a href="mailto:persatuanukayperdana@gmail.com" class="text-white-50 text-decoration-none">persatuanukayperdana@gmail.com</a>
                         </li>
                         <li class="mb-2">
-                            <i class="ph ph-phone me-2"></i>
-                            +60 17-330 4906
+                            <i class="ph ph-phone me-2" aria-hidden="true"></i>
+                            <a href="tel:+60173304906" class="text-white-50 text-decoration-none">+60 17-330 4906</a>
                         </li>
                         <li class="mb-2">
-                            <i class="ph ph-map-pin me-2"></i>
-                            Jalan UKAY PERDANA, 68000 ampang, Selangor
+                            <i class="ph ph-map-pin me-2" aria-hidden="true"></i>
+                            <span>Jalan UKAY PERDANA, 68000 Ampang, Selangor</span>
                         </li>
                     </ul>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <h3 class="h4 mb-3">Ikuti Kami</h3>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Facebook</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Instagram</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Twitter</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Tiktok</a></li>
-                    </ul>
+                    <div class="d-flex gap-3">
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="text-white-50" aria-label="Facebook">
+                            <i class="ph ph-facebook-logo" style="font-size: 1.5rem;"></i>
+                        </a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="text-white-50" aria-label="Instagram">
+                            <i class="ph ph-instagram-logo" style="font-size: 1.5rem;"></i>
+                        </a>
+                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="text-white-50" aria-label="Twitter">
+                            <i class="ph ph-twitter-logo" style="font-size: 1.5rem;"></i>
+                        </a>
+                        <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" class="text-white-50" aria-label="Tiktok">
+                            <i class="ph ph-tiktok-logo" style="font-size: 1.5rem;"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
             <hr class="my-4 bg-white-50">
@@ -262,7 +452,8 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-0">
-                    <button type="button" class="btn-close" id="closeLoginModal" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="loginModalLabel">Log Masuk</h5>
+                    <button type="button" class="btn-close" id="closeLoginModal" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <div class="modal-body px-4 pb-4">
                     <div class="login-header text-center mb-4">
@@ -278,15 +469,16 @@
                     <form id="loginForm">
                         <div class="mb-3">
                             <label for="email" class="form-label">Alamat Emel</label>
-                            <input type="email" class="form-control" id="email" placeholder="nama@contoh.com" required autocomplete="email">
+                            <input type="email" class="form-control" id="email" placeholder="nama@contoh.com" required autocomplete="email" aria-describedby="emailHelp">
+                            <div id="emailHelp" class="form-text">Kami tidak akan berkongsi emel anda dengan pihak ketiga.</div>
                         </div>
 
                         <div class="mb-3">
                             <label for="password" class="form-label">Kata Laluan</label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="password" placeholder="Masukkan kata laluan" required autocomplete="current-password">
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="ph ph-eye"></i>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Tunjuk/sembunyi kata laluan">
+                                    <i class="ph ph-eye" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
@@ -312,10 +504,10 @@
     <div class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" id="toast">
         <div class="d-flex">
             <div class="toast-body">
-                <i class="ph ph-info me-2" id="toastIcon"></i>
+                <i class="ph ph-info me-2" id="toastIcon" aria-hidden="true"></i>
                 <span id="toastMessage">Message</span>
             </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Tutup"></button>
         </div>
     </div>
 
@@ -341,8 +533,6 @@
         const alertBox = document.getElementById('alert-box');
         const togglePasswordBtn = document.getElementById('togglePassword');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        const navLinks = document.querySelector('.nav-links');
         
         // Share Buttons
         const shareBtn = document.getElementById('shareBtn');
@@ -359,6 +549,16 @@
         const toastMessageEl = document.getElementById('toastMessage');
         const toastIconEl = document.getElementById('toastIcon');
         
+        // Dark Mode Elements
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+        
+        // Scroll to Top Element
+        const scrollToTopBtn = document.getElementById('scrollToTop');
+        
+        // Statistics Elements
+        const statsNumbers = document.querySelectorAll('.stats-number');
+        
         // PWA Variables
         let deferredPrompt = null;
         let isOnline = navigator.onLine;
@@ -367,7 +567,123 @@
         // Initialize Bootstrap toast
         document.addEventListener('DOMContentLoaded', function() {
             toast = new bootstrap.Toast(toastEl);
+            
+            // Initialize dark mode
+            initDarkMode();
+            
+            // Initialize scroll animations
+            initScrollAnimations();
+            
+            // Initialize statistics counter
+            initStatsCounter();
+            
+            // Hide loading overlay after page loads
+            setTimeout(() => {
+                hideLoading();
+            }, 500); // Reduced from 1000 to 500ms for faster loading
         });
+
+        // Initialize dark mode
+        const initDarkMode = () => {
+            // Check for saved theme preference or default to light mode
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            
+            if (currentTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                darkModeIcon.className = 'ph ph-sun';
+            }
+            
+            // Toggle dark mode
+            darkModeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                
+                if (document.body.classList.contains('dark-mode')) {
+                    darkModeIcon.className = 'ph ph-sun';
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    darkModeIcon.className = 'ph ph-moon';
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        };
+
+        // Initialize scroll animations
+        const initScrollAnimations = () => {
+            // Scroll to top functionality
+            window.addEventListener('scroll', () => {
+                // Show/hide scroll to top button
+                if (window.pageYOffset > 300) {
+                    scrollToTopBtn.classList.add('show');
+                } else {
+                    scrollToTopBtn.classList.remove('show');
+                }
+                
+                // Animate cards on scroll
+                animateCardsOnScroll();
+            });
+            
+            scrollToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        };
+
+        // Animate cards on scroll
+        const animateCardsOnScroll = () => {
+            const cards = document.querySelectorAll('.card, .testimonial, .stats-card');
+            
+            cards.forEach(card => {
+                const cardTop = card.getBoundingClientRect().top;
+                const cardVisible = 150;
+                
+                if (cardTop < window.innerHeight - cardVisible) {
+                    card.classList.add('visible');
+                }
+            });
+        };
+
+        // Initialize statistics counter
+        const initStatsCounter = () => {
+            // Check if statistics section is in view
+            const statisticsSection = document.getElementById('statistics');
+            
+            const startCounter = () => {
+                statsNumbers.forEach(stat => {
+                    const target = parseInt(stat.getAttribute('data-target'));
+                    const increment = target / 100;
+                    let current = 0;
+                    
+                    const updateCounter = () => {
+                        current += increment;
+                        
+                        if (current < target) {
+                            stat.textContent = Math.ceil(current);
+                            setTimeout(updateCounter, 15); // Reduced from 20 to 15ms for faster animation
+                        } else {
+                            stat.textContent = target;
+                        }
+                    };
+                    
+                    updateCounter();
+                });
+            };
+            
+            // Intersection Observer for statistics section
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        startCounter();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            if (statisticsSection) {
+                observer.observe(statisticsSection);
+            }
+        };
 
         // Show loading overlay
         const showLoading = () => {
@@ -516,7 +832,8 @@
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
                     target.scrollIntoView({
-                        behavior: 'smooth'
+                        behavior: 'smooth',
+                        block: 'start'
                     });
                 }
             });
@@ -625,6 +942,57 @@
                     });
             });
         }
+
+        // Add CSS for smooth animations
+        const style = document.createElement('style');
+        style.textContent = `
+            .loading-overlay {
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+            }
+            
+            .card, .testimonial, .stats-card {
+                transition: transform 0.3s ease, opacity 0.3s ease;
+            }
+            
+            .card.visible, .testimonial.visible, .stats-card.visible {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            
+            .card:not(.visible), .testimonial:not(.visible), .stats-card:not(.visible) {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            
+            .scroll-to-top {
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+            }
+            
+            .scroll-to-top.show {
+                opacity: 1;
+                visibility: visible;
+            }
+            
+            .scroll-to-top:not(.show) {
+                opacity: 0;
+                visibility: hidden;
+            }
+            
+            .install-prompt {
+                transition: transform 0.3s ease, opacity 0.3s ease;
+            }
+            
+            .install-prompt.show {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            
+            .install-prompt:not(.show) {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
